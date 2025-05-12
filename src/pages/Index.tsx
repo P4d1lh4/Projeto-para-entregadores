@@ -9,6 +9,7 @@ import Deliveries from '@/pages/Deliveries';
 import Customers from '@/pages/Customers';
 import Settings from '@/pages/Settings';
 import DataImport from '@/pages/DataImport';
+import Analytics from '@/pages/Analytics';
 import FileUpload from '@/components/data-upload/FileUpload';
 import { 
   generateMockDeliveryData, 
@@ -82,6 +83,7 @@ const Index = () => {
         <Route path="drivers" element={<Drivers driverData={driverData} />} />
         <Route path="deliveries" element={<Deliveries deliveryData={deliveryData} />} />
         <Route path="customers" element={<Customers customerData={customerData} />} />
+        <Route path="analytics" element={<Analytics deliveryData={deliveryData} driverData={driverData} customerData={customerData} />} />
         <Route path="data-import" element={<DataImport />} />
         <Route path="settings" element={<Settings />} />
       </Route>

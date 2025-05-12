@@ -9,7 +9,165 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      fox_deliveries: {
+        Row: {
+          accepted_at: string | null
+          account_created_by: string | null
+          canceled_at: string | null
+          collected_at: string | null
+          collected_waiting_time: string | null
+          collecting_driver: string | null
+          collection_notes: string | null
+          company_name: string | null
+          cost: number | null
+          courier_commission: number | null
+          courier_commission_vat: number | null
+          created_at: string | null
+          customer_email: string | null
+          customer_mobile: string | null
+          customer_name: string | null
+          delivered_at: string | null
+          delivered_waiting_time: string | null
+          delivering_driver: string | null
+          delivery_address: string | null
+          delivery_customer_name: string | null
+          delivery_mobile_number: string | null
+          delivery_notes: string | null
+          distance: number | null
+          driver_notes: string | null
+          fuel_surcharge: number | null
+          id: string
+          insurance_protection: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          job_created_by: string | null
+          job_id: string | null
+          luggage_count: number | null
+          package_value: string | null
+          passenger_count: number | null
+          payment_method: string | null
+          pickup_address: string | null
+          pickup_customer_name: string | null
+          pickup_mobile_number: string | null
+          priority: string | null
+          recipient_email: string | null
+          reference: string | null
+          return_job: boolean | null
+          return_job_delivered_waiting_time: string | null
+          rider_tips: number | null
+          service_type: string | null
+          status: string | null
+          submitted_at: string | null
+          tip_amount: number | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_created_by?: string | null
+          canceled_at?: string | null
+          collected_at?: string | null
+          collected_waiting_time?: string | null
+          collecting_driver?: string | null
+          collection_notes?: string | null
+          company_name?: string | null
+          cost?: number | null
+          courier_commission?: number | null
+          courier_commission_vat?: number | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_mobile?: string | null
+          customer_name?: string | null
+          delivered_at?: string | null
+          delivered_waiting_time?: string | null
+          delivering_driver?: string | null
+          delivery_address?: string | null
+          delivery_customer_name?: string | null
+          delivery_mobile_number?: string | null
+          delivery_notes?: string | null
+          distance?: number | null
+          driver_notes?: string | null
+          fuel_surcharge?: number | null
+          id?: string
+          insurance_protection?: string | null
+          invoice_id?: string | null
+          invoice_number?: string | null
+          job_created_by?: string | null
+          job_id?: string | null
+          luggage_count?: number | null
+          package_value?: string | null
+          passenger_count?: number | null
+          payment_method?: string | null
+          pickup_address?: string | null
+          pickup_customer_name?: string | null
+          pickup_mobile_number?: string | null
+          priority?: string | null
+          recipient_email?: string | null
+          reference?: string | null
+          return_job?: boolean | null
+          return_job_delivered_waiting_time?: string | null
+          rider_tips?: number | null
+          service_type?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          tip_amount?: number | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          account_created_by?: string | null
+          canceled_at?: string | null
+          collected_at?: string | null
+          collected_waiting_time?: string | null
+          collecting_driver?: string | null
+          collection_notes?: string | null
+          company_name?: string | null
+          cost?: number | null
+          courier_commission?: number | null
+          courier_commission_vat?: number | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_mobile?: string | null
+          customer_name?: string | null
+          delivered_at?: string | null
+          delivered_waiting_time?: string | null
+          delivering_driver?: string | null
+          delivery_address?: string | null
+          delivery_customer_name?: string | null
+          delivery_mobile_number?: string | null
+          delivery_notes?: string | null
+          distance?: number | null
+          driver_notes?: string | null
+          fuel_surcharge?: number | null
+          id?: string
+          insurance_protection?: string | null
+          invoice_id?: string | null
+          invoice_number?: string | null
+          job_created_by?: string | null
+          job_id?: string | null
+          luggage_count?: number | null
+          package_value?: string | null
+          passenger_count?: number | null
+          payment_method?: string | null
+          pickup_address?: string | null
+          pickup_customer_name?: string | null
+          pickup_mobile_number?: string | null
+          priority?: string | null
+          recipient_email?: string | null
+          reference?: string | null
+          return_job?: boolean | null
+          return_job_delivered_waiting_time?: string | null
+          rider_tips?: number | null
+          service_type?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          tip_amount?: number | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { ChartBar, Map, Package, Settings, Truck, Users } from 'lucide-react';
+import { ChartBar, Map, Package, Settings, Truck, Users, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type SidebarProps = {
@@ -15,6 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     { name: 'Drivers', icon: Truck, path: '/drivers' },
     { name: 'Deliveries', icon: Package, path: '/deliveries' },
     { name: 'Customers', icon: Users, path: '/customers' },
+    { name: 'Data Import', icon: FileSpreadsheet, path: '/data-import' },
     { name: 'Settings', icon: Settings, path: '/settings' },
   ];
 

@@ -50,4 +50,23 @@ export interface FoxDelivery {
   luggage_count?: number;
   uploaded_at?: string;
   uploaded_by?: string;
+  // Geocoding properties
+  pickup_lat?: number;
+  pickup_lng?: number;
+  delivery_lat?: number;
+  delivery_lng?: number;
+}
+
+export interface GeocodeResult {
+  address: string;
+  lat: number;
+  lng: number;
+}
+
+export interface DeliveryMapFilters {
+  driver?: string;
+  customer?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  status?: string;
 }

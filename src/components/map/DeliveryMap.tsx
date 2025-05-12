@@ -300,7 +300,9 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({ deliveries, mapConfig }) => {
       const props = feature.properties;
       if (!props) return;
       
-      const coordinates = feature.geometry.coordinates.slice() as [number, number];
+      // TypeScript doesn't know that the feature geometry is a Point 
+      // with coordinates, so we need to cast it
+      const coordinates = (feature.geometry as any).coordinates.slice() as [number, number];
       
       // Close any open popups
       if (activePopup.current) {
@@ -333,7 +335,9 @@ const DeliveryMap: React.FC<DeliveryMapProps> = ({ deliveries, mapConfig }) => {
       const props = feature.properties;
       if (!props) return;
       
-      const coordinates = feature.geometry.coordinates.slice() as [number, number];
+      // TypeScript doesn't know that the feature geometry is a Point 
+      // with coordinates, so we need to cast it
+      const coordinates = (feature.geometry as any).coordinates.slice() as [number, number];
       
       // Close any open popups
       if (activePopup.current) {

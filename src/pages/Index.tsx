@@ -78,7 +78,7 @@ const Index = () => {
             <Dashboard deliveryData={deliveryData} driverData={driverData} />
           </>
         } />
-        <Route path="map" element={<MapView deliveryData={deliveryData} />} />
+        <Route path="map" element={<MapView />} />
         <Route path="drivers" element={<Drivers driverData={driverData} />} />
         <Route path="deliveries" element={<Deliveries deliveryData={deliveryData} />} />
         <Route path="customers" element={<Customers customerData={customerData} />} />

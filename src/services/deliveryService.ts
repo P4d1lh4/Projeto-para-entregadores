@@ -49,7 +49,7 @@ export const fetchDeliveryData = async (): Promise<{ data: FoxDelivery[] | null;
     
     if (error) throw error;
     
-    return { data, error: null };
+    return { data: data as FoxDelivery[], error: null };
   } catch (error) {
     console.error('Error fetching delivery data:', error);
     return { 
@@ -105,12 +105,15 @@ export const fetchDeliveryDataWithRoutes = async (
       return { data: [], error: null };
     }
     
+    // Cast data to FoxDelivery type to ensure TypeScript knows about the coordinate fields
+    const foxDeliveries = data as FoxDelivery[];
+    
     // Extract unique pickup and delivery addresses
-    const pickupAddresses = data
+    const pickupAddresses = foxDeliveries
       .map(item => item.pickup_address)
       .filter((address): address is string => !!address);
     
-    const deliveryAddresses = data
+    const deliveryAddresses = foxDeliveries
       .map(item => item.delivery_address)
       .filter((address): address is string => !!address);
     
@@ -120,7 +123,7 @@ export const fetchDeliveryDataWithRoutes = async (
     const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
     
     // Enrich delivery data with coordinates
-    const enrichedData = data.map(delivery => {
+    const enrichedData = foxDeliveries.map(delivery => {
       const enriched = { ...delivery };
       
       if (delivery.pickup_address && geocodeResults[delivery.pickup_address]) {

@@ -11,6 +11,7 @@ import DeliveryTimelinessCard from '@/components/analytics/DeliveryTimelinessCar
 import TimeSeriesAnalyticsCard from '@/components/analytics/TimeSeriesAnalyticsCard';
 import GeographicPerformanceCard from '@/components/analytics/GeographicPerformanceCard';
 import RevenueAnalyticsCard from '@/components/analytics/RevenueAnalyticsCard';
+import DeliveryKpiSection from '@/components/analytics/DeliveryKpiSection';
 import { Calendar, Clock, DollarSign, Map, TrendingUp, Truck, Users } from 'lucide-react';
 
 type AnalyticsProps = {
@@ -28,6 +29,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
           <p className="text-muted-foreground">Comprehensive insights into delivery operations and performance</p>
         </div>
       </div>
+      
+      {/* New KPI Section */}
+      <DeliveryKpiSection 
+        deliveries={deliveryData} 
+        className="mb-6" 
+      />
 
       <Tabs defaultValue="overview">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7">

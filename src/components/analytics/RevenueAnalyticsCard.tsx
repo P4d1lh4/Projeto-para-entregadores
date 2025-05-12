@@ -62,7 +62,12 @@ const RevenueAnalyticsCard: React.FC<RevenueAnalyticsCardProps> = ({ deliveries,
               <YAxis />
               <Tooltip 
                 formatter={(value, name) => {
-                  return [`$${value}`, name.charAt(0).toUpperCase() + name.slice(1)];
+                  // Fix: Properly format the tooltip label by checking if name is a string
+                  const formattedName = typeof name === 'string' 
+                    ? name.charAt(0).toUpperCase() + name.slice(1) 
+                    : String(name);
+                  
+                  return [`$${value}`, formattedName];
                 }}
               />
               <Legend />

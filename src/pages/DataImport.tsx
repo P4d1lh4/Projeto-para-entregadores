@@ -4,15 +4,27 @@ import DragDropFileUpload from '@/components/data-upload/DragDropFileUpload';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchDeliveryData } from '@/services/deliveryService';
-import DeliveryTable from '@/components/data-display/DeliveryTable';
 import { FoxDelivery } from '@/types/delivery';
 import { useToast } from '@/hooks/use-toast';
-import { FileSpreadsheet, DatabaseIcon, RefreshCcw } from 'lucide-react';
+import { FileSpreadsheet, DatabaseIcon, RefreshCcw, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+// Helper function to format dates
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return '—';
+  try {
+    return new Date(dateString).toLocaleDateString();
+  } catch (e) {
+    return '—';
+  }
+};
 
 const DataImport: React.FC = () => {
   const [deliveries, setDeliveries] = useState<FoxDelivery[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const { toast } = useToast();
   
   const loadData = async () => {
@@ -62,6 +74,25 @@ const DataImport: React.FC = () => {
     loadData();
   };
   
+  // Calculate pagination
+  const totalPages = Math.ceil(deliveries.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentDeliveries = deliveries.slice(startIndex, endIndex);
+  
+  // Column definitions - used to control which columns to display
+  const columns = [
+    { key: 'job_id', label: 'Job ID' },
+    { key: 'customer_name', label: 'Customer' },
+    { key: 'company_name', label: 'Company' },
+    { key: 'delivering_driver', label: 'Driver' },
+    { key: 'delivery_address', label: 'Delivery Address' },
+    { key: 'status', label: 'Status' },
+    { key: 'service_type', label: 'Service Type' },
+    { key: 'cost', label: 'Cost' },
+    { key: 'created_at', label: 'Created', format: formatDate }
+  ];
+  
   return (
     <div className="container mx-auto p-4 py-6 space-y-6 max-w-7xl">
       <div className="flex justify-between items-center">
@@ -110,44 +141,66 @@ const DataImport: React.FC = () => {
                   <RefreshCcw className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : deliveries.length > 0 ? (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted">
-                      <tr>
-                        <th className="p-2 text-left">Job ID</th>
-                        <th className="p-2 text-left">Customer</th>
-                        <th className="p-2 text-left">Delivery Address</th>
-                        <th className="p-2 text-left">Driver</th>
-                        <th className="p-2 text-left">Status</th>
-                        <th className="p-2 text-left">Created</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {deliveries.slice(0, 10).map((delivery, index) => (
-                        <tr key={index} className="border-t">
-                          <td className="p-2">{delivery.job_id || '—'}</td>
-                          <td className="p-2">{delivery.customer_name || '—'}</td>
-                          <td className="p-2">{delivery.delivery_address || '—'}</td>
-                          <td className="p-2">{delivery.delivering_driver || '—'}</td>
-                          <td className="p-2">{delivery.status || '—'}</td>
-                          <td className="p-2">
-                            {delivery.created_at 
-                              ? new Date(delivery.created_at).toLocaleDateString() 
-                              : '—'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <>
+                  <div className="border rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            {columns.map((column) => (
+                              <TableHead key={column.key}>{column.label}</TableHead>
+                            ))}
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {currentDeliveries.map((delivery, index) => (
+                            <TableRow key={delivery.id || index}>
+                              {columns.map((column) => (
+                                <TableCell key={`${delivery.id}-${column.key}`}>
+                                  {column.format 
+                                    ? column.format(delivery[column.key as keyof FoxDelivery] as string)
+                                    : column.key === 'cost' 
+                                      ? delivery.cost ? `$${delivery.cost.toFixed(2)}` : '—'
+                                      : delivery[column.key as keyof FoxDelivery] || '—'}
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
                   
-                  {deliveries.length > 10 && (
-                    <div className="p-2 text-center border-t">
-                      <span className="text-xs text-muted-foreground">
-                        Showing 10 of {deliveries.length} records
-                      </span>
+                  {/* Pagination controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1}-{Math.min(endIndex, deliveries.length)} of {deliveries.length} records
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   )}
-                </div>
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8">
                   <div className="text-muted-foreground mb-2">No delivery records found</div>

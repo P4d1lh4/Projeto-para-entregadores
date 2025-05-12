@@ -2,15 +2,26 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Package, Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { parseFoxDeliveryFile } from '@/utils/excel-parser';
 import { uploadDeliveryData } from '@/services/deliveryService';
 import type { FoxDelivery } from '@/types/delivery';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type DragDropFileUploadProps = {
   onDataUploaded?: (data: FoxDelivery[]) => void;
+};
+
+// Helper function to format dates
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return '—';
+  try {
+    return new Date(dateString).toLocaleDateString();
+  } catch (e) {
+    return '—';
+  }
 };
 
 const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded }) => {
@@ -19,9 +30,22 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded 
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [parsedData, setParsedData] = useState<FoxDelivery[]>([]);
-  const [previewCount, setPreviewCount] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Column definitions - preview columns to display
+  const previewColumns = [
+    { key: 'job_id', label: 'Job ID' },
+    { key: 'invoice_number', label: 'Invoice #' },
+    { key: 'customer_name', label: 'Customer' },
+    { key: 'delivering_driver', label: 'Driver' },
+    { key: 'service_type', label: 'Service' },
+    { key: 'cost', label: 'Cost' },
+    { key: 'status', label: 'Status' },
+    { key: 'created_at', label: 'Created', format: formatDate }
+  ];
   
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -79,11 +103,16 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded 
         return;
       }
       
-      setParsedData(deliveryData);
+      // Log a summary of what we found
+      console.log(`Found ${deliveryData.length} records with the following fields:`);
+      const sampleRecord = deliveryData[0];
+      const populatedFields = Object.entries(sampleRecord)
+        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+        .map(([key]) => key);
+      console.log('Populated fields:', populatedFields);
       
-      if (onDataUploaded) {
-        onDataUploaded(deliveryData);
-      }
+      setParsedData(deliveryData);
+      setCurrentPage(1);
       
       toast({
         title: 'File parsed successfully',
@@ -133,6 +162,10 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded 
           title: 'Upload successful',
           description: `${result.count} delivery records have been uploaded`,
         });
+        
+        if (onDataUploaded) {
+          onDataUploaded(parsedData);
+        }
       } else {
         toast({
           title: 'Upload failed',
@@ -153,9 +186,11 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded 
     }
   };
   
-  const togglePreviewCount = () => {
-    setPreviewCount(previewCount === 5 ? parsedData.length : 5);
-  };
+  // Calculate pagination
+  const totalPages = Math.ceil(parsedData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = parsedData.slice(startIndex, endIndex);
   
   return (
     <Card className="w-full">
@@ -231,47 +266,84 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded 
               </div>
             )}
             
-            <div className="border rounded-md">
+            <div className="border rounded-md overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="p-2 text-left">Job ID</th>
-                      <th className="p-2 text-left">Customer</th>
-                      <th className="p-2 text-left">Driver</th>
-                      <th className="p-2 text-left">Status</th>
-                      <th className="p-2 text-left">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedData.slice(0, previewCount).map((item, index) => (
-                      <tr key={index} className="border-t">
-                        <td className="p-2">{item.job_id || '—'}</td>
-                        <td className="p-2">{item.customer_name || '—'}</td>
-                        <td className="p-2">{item.delivering_driver || '—'}</td>
-                        <td className="p-2">{item.status || '—'}</td>
-                        <td className="p-2">
-                          {item.created_at 
-                            ? new Date(item.created_at).toLocaleDateString() 
-                            : '—'}
-                        </td>
-                      </tr>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {previewColumns.map(column => (
+                        <TableHead key={column.key}>{column.label}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentItems.map((item, index) => (
+                      <TableRow key={index}>
+                        {previewColumns.map(column => (
+                          <TableCell key={`${index}-${column.key}`}>
+                            {column.format 
+                              ? column.format(item[column.key as keyof FoxDelivery] as string)
+                              : column.key === 'cost'
+                                ? item.cost ? `$${item.cost.toFixed(2)}` : '—'
+                                : item[column.key as keyof FoxDelivery] || '—'}
+                          </TableCell>
+                        ))}
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
               
-              {parsedData.length > 5 && (
-                <div className="p-2 text-center border-t">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={togglePreviewCount}
-                  >
-                    {previewCount === 5 ? `Show all (${parsedData.length})` : 'Show less'}
-                  </Button>
+              {/* Pagination Controls */}
+              {parsedData.length > itemsPerPage && (
+                <div className="flex items-center justify-between p-2 border-t">
+                  <div className="text-xs text-muted-foreground">
+                    Showing {startIndex + 1}-{Math.min(endIndex, parsedData.length)} of {parsedData.length} records
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               )}
+            </div>
+            
+            {/* Debug information for the user */}
+            <div className="mt-4 p-4 bg-slate-50 border rounded-md">
+              <h4 className="text-sm font-medium mb-2">Data Preview Information</h4>
+              <p className="text-xs text-muted-foreground">
+                The following fields were detected in the Excel file:
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {Object.entries(parsedData[0] || {})
+                  .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+                  .map(([key]) => (
+                    <span 
+                      key={key} 
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs 
+                      bg-slate-200 text-slate-800 font-medium"
+                    >
+                      {key.replace(/_/g, ' ')}
+                    </span>
+                  ))}
+              </div>
             </div>
           </div>
         )}

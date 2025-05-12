@@ -2,6 +2,20 @@
 import * as XLSX from 'xlsx';
 import type { FoxDelivery } from '@/types/delivery';
 
+// Helper function to find the closest matching key in an object
+function findMatchingKey(obj: any, possibleKeys: string[]): string | undefined {
+  for (const key of possibleKeys) {
+    if (key in obj) return key;
+    
+    // Try case-insensitive match
+    const lowerKey = key.toLowerCase();
+    const objKeys = Object.keys(obj);
+    const match = objKeys.find(k => k.toLowerCase() === lowerKey);
+    if (match) return match;
+  }
+  return undefined;
+}
+
 export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -20,8 +34,15 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
         // Parse all rows to JSON
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
         
-        // Map Excel data to our FoxDelivery structure
-        const deliveries: FoxDelivery[] = jsonData.map((row: any) => {
+        if (jsonData.length === 0) {
+          throw new Error('No data found in the Excel file');
+        }
+        
+        // For debugging - log the first row to see available columns
+        console.log('Excel columns detected:', Object.keys(jsonData[0]));
+        
+        // Map Excel data to our FoxDelivery structure with improved column matching
+        const deliveries: FoxDelivery[] = jsonData.map((row: any, index) => {
           // Attempt to convert string values to appropriate types
           const convertToNumber = (value: any) => {
             if (value === undefined || value === null || value === '') return undefined;
@@ -44,7 +65,27 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
               return jsDate.toISOString();
             }
             
-            // Handle date strings
+            // Handle date strings with European format (DD/MM/YYYY)
+            if (typeof value === 'string' && value.includes('/')) {
+              const [day, month, year] = value.split('/');
+              // Check if it's a date with time
+              const hasTime = value.includes(':');
+              let dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+              
+              if (hasTime) {
+                const timePart = value.split(' ')[1];
+                dateStr += `T${timePart}:00`;
+              }
+              
+              try {
+                const date = new Date(dateStr);
+                return !isNaN(date.getTime()) ? date.toISOString() : undefined;
+              } catch {
+                return undefined;
+              }
+            }
+            
+            // Handle other date strings
             try {
               const date = new Date(String(value));
               return !isNaN(date.getTime()) ? date.toISOString() : undefined;
@@ -53,56 +94,63 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
             }
           };
           
-          // Map from the Excel column names to our field names
-          // Note: We handle various possible column name formats
+          // Improved field mapping with multiple potential column names
+          // First row from example: job_id, invoice_id, invoice_number, priority, customer_name, etc.
+          
+          // This function tries to find the best matching column
+          const getValue = (possibleKeys: string[]) => {
+            const key = findMatchingKey(row, possibleKeys);
+            return key ? row[key] : undefined;
+          };
+          
           return {
-            job_id: row['Job ID'] || row['job_id'] || row['JobId'],
-            invoice_id: row['Invoice ID'] || row['invoice_id'],
-            invoice_number: row['Invoice Number'] || row['invoice_number'],
-            priority: row['Priority'] || row['priority'],
-            customer_name: row['Customer Name'] || row['customer_name'],
-            company_name: row['Company Name'] || row['company_name'],
-            collecting_driver: row['Collecting Driver'] || row['collecting_driver'],
-            delivering_driver: row['Delivering Driver'] || row['delivering_driver'],
-            pickup_address: row['Pickup'] || row['pickup_address'] || row['Pickup Address'],
-            delivery_address: row['Delivery'] || row['delivery_address'] || row['Delivery Address'],
-            service_type: row['Service Type'] || row['service_type'],
-            cost: convertToNumber(row['Cost'] || row['cost']),
-            tip_amount: convertToNumber(row['Tip Amount'] || row['tip_amount']),
-            courier_commission: convertToNumber(row['Courier Commission'] || row['courier_commission']),
-            courier_commission_vat: convertToNumber(row['Courier Commission VAT'] || row['courier_commission_vat']),
-            status: row['Status'] || row['status'],
-            created_at: convertToDate(row['Created Date/Time'] || row['created_at']),
-            account_created_by: row['Account Created By'] || row['account_created_by'],
-            job_created_by: row['Job Created By'] || row['job_created_by'],
-            customer_email: row['Customer Email'] || row['customer_email'],
-            customer_mobile: row['Customer Mobile'] || row['customer_mobile'],
-            distance: convertToNumber(row['Distance'] || row['distance']),
-            pickup_customer_name: row['Pickup Customer Name'] || row['pickup_customer_name'],
-            pickup_mobile_number: row['Pickup Mobile Number'] || row['pickup_mobile_number'],
-            collection_notes: row['Collection Notes'] || row['collection_notes'],
-            delivery_customer_name: row['Delivery Customer Name'] || row['delivery_customer_name'],
-            delivery_mobile_number: row['Delivery Mobile Number'] || row['delivery_mobile_number'],
-            delivery_notes: row['Delivery Notes'] || row['delivery_notes'],
-            recipient_email: row['Recipient Email'] || row['recipient_email'],
-            reference: row['Reference'] || row['reference'],
-            submitted_at: convertToDate(row['Submitted Date/Time'] || row['submitted_at']),
-            accepted_at: convertToDate(row['Accepted Date/Time'] || row['accepted_at']),
-            collected_at: convertToDate(row['Collected Date/Time'] || row['collected_at']),
-            delivered_at: convertToDate(row['Delivered Date/Time'] || row['delivered_at']),
-            canceled_at: convertToDate(row['Canceled Date/Time'] || row['canceled_at']),
-            driver_notes: row['Driver Notes'] || row['driver_notes'],
-            return_job: convertToBoolean(row['Return Job'] || row['return_job']),
-            payment_method: row['Payment Method'] || row['payment_method'],
-            collected_waiting_time: row['Collected Waiting Time'] || row['collected_waiting_time'],
-            delivered_waiting_time: row['Delivered Waiting Time'] || row['delivered_waiting_time'],
-            return_job_delivered_waiting_time: row['Return Job delivered Waiting Time'] || row['return_job_delivered_waiting_time'],
-            fuel_surcharge: convertToNumber(row['Fuel Surcharge'] || row['fuel_surcharge']),
-            insurance_protection: row['You have free protection on your items for up to €50. Would you like to protect your items for the full value of up to €10,000? If yes, how much would you like to protect?'] || row['insurance_protection'],
-            rider_tips: convertToNumber(row['Rider Tips'] || row['rider_tips']),
-            package_value: row['How much is your package?'] || row['Package Value'] || row['package_value'],
-            passenger_count: convertToNumber(row['How many passengers?'] || row['passenger_count']),
-            luggage_count: convertToNumber(row['How Many Lugagges?'] || row['luggage_count'])
+            job_id: getValue(['Job ID', 'job_id', 'JobId', 'Job_ID']),
+            invoice_id: getValue(['Invoice ID', 'invoice_id', 'InvoiceId', 'Invoice_ID']),
+            invoice_number: getValue(['Invoice Number', 'invoice_number', 'InvoiceNumber']),
+            priority: getValue(['Priority', 'priority', 'Urgent or Scheduled (Same-hour or Scheduled time)']),
+            customer_name: getValue(['Customer Name', 'customer_name', 'CustomerName', 'Customer']),
+            company_name: getValue(['Company Name', 'company_name', 'CompanyName']),
+            collecting_driver: getValue(['Collecting Driver', 'collecting_driver', 'CollectingDriver']),
+            delivering_driver: getValue(['Delivering Driver', 'delivering_driver', 'DeliveringDriver', 'Driver']),
+            pickup_address: getValue(['Pickup', 'pickup_address', 'Pickup Address', 'PickupAddress']),
+            delivery_address: getValue(['Delivery', 'delivery_address', 'Delivery Address', 'DeliveryAddress']),
+            service_type: getValue(['Service Type', 'service_type', 'ServiceType']),
+            cost: convertToNumber(getValue(['Cost', 'cost'])),
+            tip_amount: convertToNumber(getValue(['Tip Amount', 'tip_amount', 'TipAmount'])),
+            courier_commission: convertToNumber(getValue(['Courier Commission', 'courier_commission', 'CourierCommission'])),
+            courier_commission_vat: convertToNumber(getValue(['Courier Commission VAT', 'courier_commission_vat', 'CourierCommissionVAT'])),
+            status: getValue(['Status', 'status']),
+            created_at: convertToDate(getValue(['Created Date/Time', 'created_at', 'CreatedDate', 'Created', 'CreateDate'])),
+            account_created_by: getValue(['Account Created By', 'account_created_by', 'AccountCreatedBy']),
+            job_created_by: getValue(['Job Created By', 'job_created_by', 'JobCreatedBy']),
+            customer_email: getValue(['Customer Email', 'customer_email', 'CustomerEmail']),
+            customer_mobile: getValue(['Customer Mobile', 'customer_mobile', 'CustomerMobile']),
+            distance: convertToNumber(getValue(['Distance', 'distance'])),
+            pickup_customer_name: getValue(['Pickup Customer Name', 'pickup_customer_name', 'PickupCustomerName']),
+            pickup_mobile_number: getValue(['Pickup Mobile Number', 'pickup_mobile_number', 'PickupMobileNumber']),
+            collection_notes: getValue(['Collection Notes', 'collection_notes', 'CollectionNotes']),
+            delivery_customer_name: getValue(['Delivery Customer Name', 'delivery_customer_name', 'DeliveryCustomerName']),
+            delivery_mobile_number: getValue(['Delivery Mobile Number', 'delivery_mobile_number', 'DeliveryMobileNumber']),
+            delivery_notes: getValue(['Delivery Notes', 'delivery_notes', 'DeliveryNotes']),
+            recipient_email: getValue(['Recipient Email', 'recipient_email', 'RecipientEmail']),
+            reference: getValue(['Reference', 'reference']),
+            submitted_at: convertToDate(getValue(['Submitted Date/Time', 'submitted_at', 'SubmittedDate'])),
+            accepted_at: convertToDate(getValue(['Accepted Date/Time', 'accepted_at', 'AcceptedDate'])),
+            collected_at: convertToDate(getValue(['Collected Date/Time', 'collected_at', 'CollectedDate'])),
+            delivered_at: convertToDate(getValue(['Delivered Date/Time', 'delivered_at', 'DeliveredDate'])),
+            canceled_at: convertToDate(getValue(['Canceled Date/Time', 'canceled_at', 'CanceledDate'])),
+            driver_notes: getValue(['Driver Notes', 'driver_notes', 'DriverNotes']),
+            return_job: convertToBoolean(getValue(['Return Job', 'return_job', 'ReturnJob'])),
+            payment_method: getValue(['Payment Method', 'payment_method', 'PaymentMethod']),
+            collected_waiting_time: getValue(['Collected Waiting Time', 'collected_waiting_time', 'CollectedWaitingTime']),
+            delivered_waiting_time: getValue(['Delivered Waiting Time', 'delivered_waiting_time', 'DeliveredWaitingTime']),
+            return_job_delivered_waiting_time: getValue(['Return Job delivered Waiting Time', 'return_job_delivered_waiting_time', 'ReturnJobDeliveredWaitingTime']),
+            fuel_surcharge: convertToNumber(getValue(['Fuel Surcharge', 'fuel_surcharge', 'FuelSurcharge'])),
+            insurance_protection: getValue(['You have free protection on your items for up to €50. Would you like to protect your items for the full value of up to €10,000? If yes, how much would you like to protect?', 'insurance_protection', 'InsuranceProtection']),
+            rider_tips: convertToNumber(getValue(['Rider Tips', 'rider_tips', 'RiderTips'])),
+            package_value: getValue(['How much is your package?', 'Package Value', 'package_value', 'PackageValue', '"How much is your package?\nOptional - Insurance up to €1.000"']),
+            passenger_count: convertToNumber(getValue(['How many passengers?', 'passenger_count', 'PassengerCount'])),
+            luggage_count: convertToNumber(getValue(['How Many Lugagges?', 'luggage_count', 'LuggageCount'])),
           };
         });
         

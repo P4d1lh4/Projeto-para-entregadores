@@ -2,12 +2,13 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileSpreadsheet, DatabaseIcon } from 'lucide-react';
+import { FileSpreadsheet, DatabaseIcon, BarChart3 } from 'lucide-react';
 import DragDropFileUpload from '@/components/data-upload/DragDropFileUpload';
 import type { FoxDelivery } from '@/types/delivery';
 import DeliveryTable from './DeliveryTable';
 import EmptyState from './EmptyState';
 import LoadingState from './LoadingState';
+import DataAnalyzer from './DataAnalyzer';
 
 type TabsContainerProps = {
   deliveries: FoxDelivery[];
@@ -42,6 +43,10 @@ const TabsContainer: React.FC<TabsContainerProps> = ({
           <DatabaseIcon className="h-4 w-4" />
           Imported Data
         </TabsTrigger>
+        <TabsTrigger value="analytics" className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4" />
+          Analytics
+        </TabsTrigger>
       </TabsList>
       
       <TabsContent value="upload" className="pt-4">
@@ -75,6 +80,23 @@ const TabsContainer: React.FC<TabsContainerProps> = ({
             ) : (
               <EmptyState />
             )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+      
+      <TabsContent value="analytics" className="pt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Delivery Data Analysis
+            </CardTitle>
+            <CardDescription>
+              Insights and metrics from your delivery data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DataAnalyzer deliveries={deliveries} isLoading={isLoading} />
           </CardContent>
         </Card>
       </TabsContent>

@@ -16,6 +16,83 @@ function findMatchingKey(obj: any, possibleKeys: string[]): string | undefined {
   return undefined;
 }
 
+// Helper function to convert various data types to appropriate formats
+const dataConverters = {
+  // Convert to number with handling for different formats
+  toNumber: (value: any): number | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    // Handle values with currency symbols or commas
+    const normalized = String(value).replace(/[$£€,]/g, '');
+    const num = parseFloat(normalized);
+    return isNaN(num) ? undefined : num;
+  },
+  
+  // Convert to boolean with flexible input handling
+  toBoolean: (value: any): boolean | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (value === 1 || value === '1') return true;
+    if (value === 0 || value === '0') return false;
+    
+    const strValue = String(value).toLowerCase();
+    if (['true', 'yes', 'y'].includes(strValue)) return true;
+    if (['false', 'no', 'n'].includes(strValue)) return false;
+    
+    return undefined;
+  },
+  
+  // Enhanced date conversion with multiple format handling
+  toDate: (value: any): string | undefined => {
+    if (value === undefined || value === null || value === '') return undefined;
+    
+    // Handle Excel date numbers
+    if (typeof value === 'number' && !isNaN(value)) {
+      const date = XLSX.SSF.parse_date_code(value);
+      const jsDate = new Date(Date.UTC(date.y, date.m - 1, date.d, date.H, date.M, date.S));
+      return jsDate.toISOString();
+    }
+    
+    // Handle date strings with various formats
+    if (typeof value === 'string') {
+      // European format (DD/MM/YYYY)
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(value)) {
+        const [day, month, year] = value.split('/');
+        // Check if it's a date with time
+        const hasTime = value.includes(':');
+        let dateStr = `${year.length === 2 ? '20' + year : year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        
+        if (hasTime) {
+          const timePart = value.split(' ')[1];
+          dateStr += `T${timePart}:00`;
+        } else {
+          dateStr += 'T00:00:00';
+        }
+        
+        try {
+          const date = new Date(dateStr);
+          return !isNaN(date.getTime()) ? date.toISOString() : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+      
+      // US format (MM/DD/YYYY)
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(value) && !isNaN(Date.parse(value))) {
+        const date = new Date(value);
+        return !isNaN(date.getTime()) ? date.toISOString() : undefined;
+      }
+    }
+    
+    // Handle other date strings
+    try {
+      const date = new Date(String(value));
+      return !isNaN(date.getTime()) ? date.toISOString() : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+};
+
 export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -43,118 +120,68 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
         
         // Map Excel data to our FoxDelivery structure with improved column matching
         const deliveries: FoxDelivery[] = jsonData.map((row: any, index) => {
-          // Attempt to convert string values to appropriate types
-          const convertToNumber = (value: any) => {
-            if (value === undefined || value === null || value === '') return undefined;
-            const num = parseFloat(String(value).replace(/,/g, ''));
-            return isNaN(num) ? undefined : num;
-          };
-          
-          const convertToBoolean = (value: any) => {
-            if (value === undefined || value === null || value === '') return undefined;
-            return value === 1 || String(value).toLowerCase() === 'true' || String(value).toLowerCase() === 'yes';
-          };
-          
-          const convertToDate = (value: any) => {
-            if (value === undefined || value === null || value === '') return undefined;
-            
-            // Handle Excel date numbers
-            if (typeof value === 'number' && !isNaN(value)) {
-              const date = XLSX.SSF.parse_date_code(value);
-              const jsDate = new Date(Date.UTC(date.y, date.m - 1, date.d, date.H, date.M, date.S));
-              return jsDate.toISOString();
-            }
-            
-            // Handle date strings with European format (DD/MM/YYYY)
-            if (typeof value === 'string' && value.includes('/')) {
-              const [day, month, year] = value.split('/');
-              // Check if it's a date with time
-              const hasTime = value.includes(':');
-              let dateStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-              
-              if (hasTime) {
-                const timePart = value.split(' ')[1];
-                dateStr += `T${timePart}:00`;
-              }
-              
-              try {
-                const date = new Date(dateStr);
-                return !isNaN(date.getTime()) ? date.toISOString() : undefined;
-              } catch {
-                return undefined;
-              }
-            }
-            
-            // Handle other date strings
-            try {
-              const date = new Date(String(value));
-              return !isNaN(date.getTime()) ? date.toISOString() : undefined;
-            } catch {
-              return undefined;
-            }
-          };
-          
-          // Improved field mapping with multiple potential column names
-          // First row from example: job_id, invoice_id, invoice_number, priority, customer_name, etc.
-          
           // This function tries to find the best matching column
           const getValue = (possibleKeys: string[]) => {
             const key = findMatchingKey(row, possibleKeys);
             return key ? row[key] : undefined;
           };
           
+          // Enhanced data extraction with flexible field mapping
           return {
-            job_id: getValue(['Job ID', 'job_id', 'JobId', 'Job_ID']),
+            job_id: getValue(['Job ID', 'job_id', 'JobId', 'Job_ID', 'Job Number', 'Order Number']),
             invoice_id: getValue(['Invoice ID', 'invoice_id', 'InvoiceId', 'Invoice_ID']),
-            invoice_number: getValue(['Invoice Number', 'invoice_number', 'InvoiceNumber']),
-            priority: getValue(['Priority', 'priority', 'Urgent or Scheduled (Same-hour or Scheduled time)']),
+            invoice_number: getValue(['Invoice Number', 'invoice_number', 'InvoiceNumber', 'Invoice #', 'Invoice No']),
+            priority: getValue(['Priority', 'priority', 'Urgent or Scheduled (Same-hour or Scheduled time)', 'Job Priority']),
             customer_name: getValue(['Customer Name', 'customer_name', 'CustomerName', 'Customer']),
-            company_name: getValue(['Company Name', 'company_name', 'CompanyName']),
-            collecting_driver: getValue(['Collecting Driver', 'collecting_driver', 'CollectingDriver']),
-            delivering_driver: getValue(['Delivering Driver', 'delivering_driver', 'DeliveringDriver', 'Driver']),
-            pickup_address: getValue(['Pickup', 'pickup_address', 'Pickup Address', 'PickupAddress']),
-            delivery_address: getValue(['Delivery', 'delivery_address', 'Delivery Address', 'DeliveryAddress']),
-            service_type: getValue(['Service Type', 'service_type', 'ServiceType']),
-            cost: convertToNumber(getValue(['Cost', 'cost'])),
-            tip_amount: convertToNumber(getValue(['Tip Amount', 'tip_amount', 'TipAmount'])),
-            courier_commission: convertToNumber(getValue(['Courier Commission', 'courier_commission', 'CourierCommission'])),
-            courier_commission_vat: convertToNumber(getValue(['Courier Commission VAT', 'courier_commission_vat', 'CourierCommissionVAT'])),
-            status: getValue(['Status', 'status']),
-            created_at: convertToDate(getValue(['Created Date/Time', 'created_at', 'CreatedDate', 'Created', 'CreateDate'])),
+            company_name: getValue(['Company Name', 'company_name', 'CompanyName', 'Company', 'Business Name']),
+            collecting_driver: getValue(['Collecting Driver', 'collecting_driver', 'CollectingDriver', 'Pickup Driver']),
+            delivering_driver: getValue(['Delivering Driver', 'delivering_driver', 'DeliveringDriver', 'Driver', 'Courier Name']),
+            pickup_address: getValue(['Pickup', 'pickup_address', 'Pickup Address', 'PickupAddress', 'Collection Address']),
+            delivery_address: getValue(['Delivery', 'delivery_address', 'Delivery Address', 'DeliveryAddress', 'Drop-off Address']),
+            service_type: getValue(['Service Type', 'service_type', 'ServiceType', 'Service', 'Delivery Type']),
+            cost: dataConverters.toNumber(getValue(['Cost', 'cost', 'Total Cost', 'Price', 'Charge', 'Fee', 'Amount'])),
+            tip_amount: dataConverters.toNumber(getValue(['Tip Amount', 'tip_amount', 'TipAmount', 'Tip', 'Gratuity'])),
+            courier_commission: dataConverters.toNumber(getValue(['Courier Commission', 'courier_commission', 'CourierCommission', 'Driver Commission'])),
+            courier_commission_vat: dataConverters.toNumber(getValue(['Courier Commission VAT', 'courier_commission_vat', 'CourierCommissionVAT', 'VAT'])),
+            status: getValue(['Status', 'status', 'Delivery Status', 'Job Status']),
+            created_at: dataConverters.toDate(getValue(['Created Date/Time', 'created_at', 'CreatedDate', 'Created', 'CreateDate', 'Date Created'])),
             account_created_by: getValue(['Account Created By', 'account_created_by', 'AccountCreatedBy']),
-            job_created_by: getValue(['Job Created By', 'job_created_by', 'JobCreatedBy']),
-            customer_email: getValue(['Customer Email', 'customer_email', 'CustomerEmail']),
-            customer_mobile: getValue(['Customer Mobile', 'customer_mobile', 'CustomerMobile']),
-            distance: convertToNumber(getValue(['Distance', 'distance'])),
-            pickup_customer_name: getValue(['Pickup Customer Name', 'pickup_customer_name', 'PickupCustomerName']),
-            pickup_mobile_number: getValue(['Pickup Mobile Number', 'pickup_mobile_number', 'PickupMobileNumber']),
-            collection_notes: getValue(['Collection Notes', 'collection_notes', 'CollectionNotes']),
-            delivery_customer_name: getValue(['Delivery Customer Name', 'delivery_customer_name', 'DeliveryCustomerName']),
-            delivery_mobile_number: getValue(['Delivery Mobile Number', 'delivery_mobile_number', 'DeliveryMobileNumber']),
-            delivery_notes: getValue(['Delivery Notes', 'delivery_notes', 'DeliveryNotes']),
+            job_created_by: getValue(['Job Created By', 'job_created_by', 'JobCreatedBy', 'Created By']),
+            customer_email: getValue(['Customer Email', 'customer_email', 'CustomerEmail', 'Email']),
+            customer_mobile: getValue(['Customer Mobile', 'customer_mobile', 'CustomerMobile', 'Phone', 'Mobile']),
+            distance: dataConverters.toNumber(getValue(['Distance', 'distance', 'Delivery Distance', 'Miles', 'Km'])),
+            pickup_customer_name: getValue(['Pickup Customer Name', 'pickup_customer_name', 'PickupCustomerName', 'Sender Name']),
+            pickup_mobile_number: getValue(['Pickup Mobile Number', 'pickup_mobile_number', 'PickupMobileNumber', 'Sender Phone']),
+            collection_notes: getValue(['Collection Notes', 'collection_notes', 'CollectionNotes', 'Pickup Notes']),
+            delivery_customer_name: getValue(['Delivery Customer Name', 'delivery_customer_name', 'DeliveryCustomerName', 'Recipient Name']),
+            delivery_mobile_number: getValue(['Delivery Mobile Number', 'delivery_mobile_number', 'DeliveryMobileNumber', 'Recipient Phone']),
+            delivery_notes: getValue(['Delivery Notes', 'delivery_notes', 'DeliveryNotes', 'Drop-off Notes']),
             recipient_email: getValue(['Recipient Email', 'recipient_email', 'RecipientEmail']),
-            reference: getValue(['Reference', 'reference']),
-            submitted_at: convertToDate(getValue(['Submitted Date/Time', 'submitted_at', 'SubmittedDate'])),
-            accepted_at: convertToDate(getValue(['Accepted Date/Time', 'accepted_at', 'AcceptedDate'])),
-            collected_at: convertToDate(getValue(['Collected Date/Time', 'collected_at', 'CollectedDate'])),
-            delivered_at: convertToDate(getValue(['Delivered Date/Time', 'delivered_at', 'DeliveredDate'])),
-            canceled_at: convertToDate(getValue(['Canceled Date/Time', 'canceled_at', 'CanceledDate'])),
-            driver_notes: getValue(['Driver Notes', 'driver_notes', 'DriverNotes']),
-            return_job: convertToBoolean(getValue(['Return Job', 'return_job', 'ReturnJob'])),
-            payment_method: getValue(['Payment Method', 'payment_method', 'PaymentMethod']),
-            collected_waiting_time: getValue(['Collected Waiting Time', 'collected_waiting_time', 'CollectedWaitingTime']),
-            delivered_waiting_time: getValue(['Delivered Waiting Time', 'delivered_waiting_time', 'DeliveredWaitingTime']),
+            reference: getValue(['Reference', 'reference', 'Customer Reference', 'Order Ref']),
+            submitted_at: dataConverters.toDate(getValue(['Submitted Date/Time', 'submitted_at', 'SubmittedDate', 'Date Submitted'])),
+            accepted_at: dataConverters.toDate(getValue(['Accepted Date/Time', 'accepted_at', 'AcceptedDate', 'Date Accepted'])),
+            collected_at: dataConverters.toDate(getValue(['Collected Date/Time', 'collected_at', 'CollectedDate', 'Pickup Time', 'Collection Time'])),
+            delivered_at: dataConverters.toDate(getValue(['Delivered Date/Time', 'delivered_at', 'DeliveredDate', 'Delivery Time', 'Completion Time'])),
+            canceled_at: dataConverters.toDate(getValue(['Canceled Date/Time', 'canceled_at', 'CanceledDate', 'Cancellation Time'])),
+            driver_notes: getValue(['Driver Notes', 'driver_notes', 'DriverNotes', 'Courier Notes']),
+            return_job: dataConverters.toBoolean(getValue(['Return Job', 'return_job', 'ReturnJob', 'Is Return', 'Return Delivery'])),
+            payment_method: getValue(['Payment Method', 'payment_method', 'PaymentMethod', 'Payment Type']),
+            collected_waiting_time: getValue(['Collected Waiting Time', 'collected_waiting_time', 'CollectedWaitingTime', 'Pickup Wait Time']),
+            delivered_waiting_time: getValue(['Delivered Waiting Time', 'delivered_waiting_time', 'DeliveredWaitingTime', 'Delivery Wait Time']),
             return_job_delivered_waiting_time: getValue(['Return Job delivered Waiting Time', 'return_job_delivered_waiting_time', 'ReturnJobDeliveredWaitingTime']),
-            fuel_surcharge: convertToNumber(getValue(['Fuel Surcharge', 'fuel_surcharge', 'FuelSurcharge'])),
-            insurance_protection: getValue(['You have free protection on your items for up to €50. Would you like to protect your items for the full value of up to €10,000? If yes, how much would you like to protect?', 'insurance_protection', 'InsuranceProtection']),
-            rider_tips: convertToNumber(getValue(['Rider Tips', 'rider_tips', 'RiderTips'])),
-            package_value: getValue(['How much is your package?', 'Package Value', 'package_value', 'PackageValue', '"How much is your package?\nOptional - Insurance up to €1.000"']),
-            passenger_count: convertToNumber(getValue(['How many passengers?', 'passenger_count', 'PassengerCount'])),
-            luggage_count: convertToNumber(getValue(['How Many Lugagges?', 'luggage_count', 'LuggageCount'])),
+            fuel_surcharge: dataConverters.toNumber(getValue(['Fuel Surcharge', 'fuel_surcharge', 'FuelSurcharge', 'Fuel Fee'])),
+            insurance_protection: getValue(['You have free protection on your items for up to €50. Would you like to protect your items for the full value of up to €10,000? If yes, how much would you like to protect?', 'insurance_protection', 'InsuranceProtection', 'Insurance', 'Protection Value']),
+            rider_tips: dataConverters.toNumber(getValue(['Rider Tips', 'rider_tips', 'RiderTips', 'Driver Tips'])),
+            package_value: getValue(['How much is your package?', 'Package Value', 'package_value', 'PackageValue', '"How much is your package?\nOptional - Insurance up to €1.000"', 'Item Value']),
+            passenger_count: dataConverters.toNumber(getValue(['How many passengers?', 'passenger_count', 'PassengerCount', 'Number of Passengers', 'Passengers'])),
+            luggage_count: dataConverters.toNumber(getValue(['How Many Lugagges?', 'luggage_count', 'LuggageCount', 'Number of Bags', 'Luggage Items'])),
           };
         });
         
-        resolve(deliveries);
+        // Process and enhance the data with additional analysis
+        const processedDeliveries = enhanceDeliveryData(deliveries);
+        
+        resolve(processedDeliveries);
       } catch (error) {
         console.error('Error parsing Excel file:', error);
         reject(error instanceof Error ? error : new Error('Unknown error parsing file'));
@@ -168,4 +195,140 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
     
     reader.readAsBinaryString(file);
   });
+}
+
+// Function to enhance delivery data with additional insights
+function enhanceDeliveryData(deliveries: FoxDelivery[]): FoxDelivery[] {
+  if (deliveries.length === 0) return deliveries;
+  
+  // Calculate additional metrics for the dataset
+  calculateDatasetMetrics(deliveries);
+  
+  return deliveries.map(delivery => {
+    // Data quality checks and enhancement
+    const enhanced: FoxDelivery = { ...delivery };
+    
+    // Add missing delivery status if possible
+    if (!enhanced.status) {
+      if (enhanced.delivered_at) enhanced.status = 'delivered';
+      else if (enhanced.canceled_at) enhanced.status = 'canceled';
+      else if (enhanced.collected_at) enhanced.status = 'in_transit';
+      else if (enhanced.accepted_at) enhanced.status = 'accepted';
+      else enhanced.status = 'pending';
+    }
+    
+    // Normalize service type values
+    if (enhanced.service_type) {
+      enhanced.service_type = normalizeServiceType(enhanced.service_type);
+    }
+    
+    // Clean up address fields
+    if (enhanced.delivery_address) {
+      enhanced.delivery_address = cleanupAddress(enhanced.delivery_address);
+    }
+    
+    if (enhanced.pickup_address) {
+      enhanced.pickup_address = cleanupAddress(enhanced.pickup_address);
+    }
+    
+    return enhanced;
+  });
+}
+
+// Function to normalize service type values
+function normalizeServiceType(serviceType: string): string {
+  const lowerType = serviceType.toLowerCase();
+  
+  // Map common variations to standard values
+  if (/express|urgent|rush|same.?day|priority/i.test(lowerType)) return 'Express';
+  if (/standard|regular|normal/i.test(lowerType)) return 'Standard';
+  if (/economy|basic/i.test(lowerType)) return 'Economy';
+  if (/scheduled|planned|advance/i.test(lowerType)) return 'Scheduled';
+  if (/overnight|next.?day/i.test(lowerType)) return 'Overnight';
+  
+  // If no match, capitalize first letter
+  return serviceType.charAt(0).toUpperCase() + serviceType.slice(1);
+}
+
+// Function to clean up address fields
+function cleanupAddress(address: string): string {
+  // Remove excessive whitespace
+  let cleaned = address.replace(/\s+/g, ' ').trim();
+  
+  // Fix common address abbreviations
+  cleaned = cleaned.replace(/(\d+)\s*,\s*([A-Za-z])/g, '$1 $2');
+  cleaned = cleaned.replace(/\bSt\b/g, 'Street');
+  cleaned = cleaned.replace(/\bRd\b/g, 'Road');
+  cleaned = cleaned.replace(/\bAve\b/g, 'Avenue');
+  
+  return cleaned;
+}
+
+// Calculate overall metrics for the dataset
+function calculateDatasetMetrics(deliveries: FoxDelivery[]): void {
+  // Only perform calculations if we have enough data
+  if (deliveries.length < 2) return;
+  
+  // Calculate time-based metrics if dates are available
+  const deliveredItems = deliveries.filter(d => d.delivered_at && d.collected_at);
+  if (deliveredItems.length > 0) {
+    // Calculate average delivery times
+    const deliveryTimes = deliveredItems.map(d => {
+      const collectedTime = d.collected_at ? new Date(d.collected_at).getTime() : 0;
+      const deliveredTime = d.delivered_at ? new Date(d.delivered_at).getTime() : 0;
+      return (deliveredTime - collectedTime) / (1000 * 60); // minutes
+    }).filter(time => time > 0);
+    
+    if (deliveryTimes.length > 0) {
+      const avgDeliveryTime = deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length;
+      console.log(`Average delivery time: ${Math.round(avgDeliveryTime)} minutes`);
+    }
+  }
+  
+  // Calculate cost metrics
+  const itemsWithCost = deliveries.filter(d => d.cost !== undefined && d.cost !== null);
+  if (itemsWithCost.length > 0) {
+    const costs = itemsWithCost.map(d => d.cost as number);
+    const totalCost = costs.reduce((sum, cost) => sum + cost, 0);
+    const avgCost = totalCost / costs.length;
+    const minCost = Math.min(...costs);
+    const maxCost = Math.max(...costs);
+    
+    console.log(`Cost metrics - Total: $${totalCost.toFixed(2)}, Average: $${avgCost.toFixed(2)}, Range: $${minCost.toFixed(2)} - $${maxCost.toFixed(2)}`);
+  }
+  
+  // Calculate status distribution
+  const statusCounts: Record<string, number> = {};
+  deliveries.forEach(d => {
+    const status = d.status || 'unknown';
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+  });
+  
+  console.log('Status distribution:', statusCounts);
+  
+  // Driver performance metrics
+  const driverDeliveries: Record<string, { count: number, completed: number }> = {};
+  deliveries.forEach(d => {
+    if (d.delivering_driver) {
+      if (!driverDeliveries[d.delivering_driver]) {
+        driverDeliveries[d.delivering_driver] = { count: 0, completed: 0 };
+      }
+      
+      driverDeliveries[d.delivering_driver].count++;
+      if (d.status === 'delivered') {
+        driverDeliveries[d.delivering_driver].completed++;
+      }
+    }
+  });
+  
+  // Log driver metrics for top drivers
+  const topDrivers = Object.entries(driverDeliveries)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5);
+  
+  console.log('Top drivers performance:', topDrivers.map(([name, stats]) => ({
+    name,
+    deliveries: stats.count,
+    completionRate: `${Math.round(stats.completed / stats.count * 100)}%`
+  })));
 }

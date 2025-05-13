@@ -53,6 +53,15 @@ const DeliveryTable: React.FC<DeliveryTableProps> = ({
 
   const currentDeliveries = deliveries.slice(startIndex, endIndex);
 
+  // Helper functions for page navigation
+  const goToPreviousPage = () => {
+    setCurrentPage(Math.max(currentPage - 1, 1));
+  };
+
+  const goToNextPage = () => {
+    setCurrentPage(Math.min(currentPage + 1, totalPages));
+  };
+
   return (
     <>
       <div className="border rounded-lg overflow-hidden">
@@ -94,7 +103,7 @@ const DeliveryTable: React.FC<DeliveryTableProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={goToPreviousPage}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -105,7 +114,7 @@ const DeliveryTable: React.FC<DeliveryTableProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={goToNextPage}
               disabled={currentPage === totalPages}
             >
               <ChevronRight className="h-4 w-4" />

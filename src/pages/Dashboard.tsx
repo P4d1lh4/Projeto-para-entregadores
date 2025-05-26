@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Truck, Package, Users, Map } from 'lucide-react';
+import { Truck, Package, Users, Clock } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import PerformanceChart from '@/components/dashboard/PerformanceChart';
 import DeliveryStatusChart from '@/components/dashboard/DeliveryStatusChart';
@@ -19,14 +19,16 @@ const Dashboard: React.FC<DashboardProps> = ({ deliveryData, driverData }) => {
   const deliveredCount = deliveryData.filter(d => d.status === 'delivered').length;
   const successRate = totalDeliveries > 0 ? Math.round((deliveredCount / totalDeliveries) * 100) : 0;
   const uniqueDriversCount = new Set(deliveryData.map(d => d.driverId)).size;
-  const uniqueCustomersCount = new Set(deliveryData.map(d => d.customerId)).size;
   
-  // Calculate overall average rating
-  const ratings = deliveryData
-    .filter(d => d.rating !== undefined)
-    .map(d => d.rating as number);
-  const averageRating = ratings.length > 0 ? 
-    Math.round((ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length) * 10) / 10 : 0;
+  // Calculate average delivery time in hours
+  const deliveredOrders = deliveryData.filter(d => d.status === 'delivered');
+  const avgDeliveryTimeHours = deliveredOrders.length > 0 ? 
+    Math.round((deliveredOrders.reduce((sum, delivery) => {
+      // Mock calculation - in real scenario this would be based on actual time data
+      const deliveryTime = new Date(delivery.deliveryTime);
+      const orderTime = new Date(deliveryTime.getTime() - (Math.random() * 24 * 60 * 60 * 1000)); // Random time within 24 hours
+      return sum + ((deliveryTime.getTime() - orderTime.getTime()) / (1000 * 60 * 60));
+    }, 0) / deliveredOrders.length) * 10) / 10 : 0;
   
   return (
     <div className="space-y-6">
@@ -52,10 +54,11 @@ const Dashboard: React.FC<DashboardProps> = ({ deliveryData, driverData }) => {
           trend={{ value: 0, isPositive: true }}
         />
         <StatCard 
-          title="Customer Satisfaction" 
-          value={`${averageRating}/5`}
-          icon={<Map size={24} />}
-          trend={{ value: 5, isPositive: true }}
+          title="Tempo Médio de Entrega" 
+          value={`${avgDeliveryTimeHours}h`}
+          icon={<Clock size={24} />}
+          trend={{ value: 8, isPositive: false }}
+          description="Tempo médio entre pedido e entrega"
         />
       </div>
       

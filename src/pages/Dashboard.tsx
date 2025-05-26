@@ -54,11 +54,11 @@ const Dashboard: React.FC<DashboardProps> = ({ deliveryData, driverData }) => {
           trend={{ value: 0, isPositive: true }}
         />
         <StatCard 
-          title="Tempo Médio de Entrega" 
+          title="Average Delivery Time" 
           value={`${avgDeliveryTimeHours}h`}
           icon={<Clock size={24} />}
           trend={{ value: 8, isPositive: false }}
-          description="Tempo médio entre pedido e entrega"
+          description="Average time between order and delivery"
         />
       </div>
       

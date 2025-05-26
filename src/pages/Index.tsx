@@ -10,7 +10,6 @@ import Customers from '@/pages/Customers';
 import Settings from '@/pages/Settings';
 import DataImport from '@/pages/DataImport';
 import Analytics from '@/pages/Analytics';
-import FileUpload from '@/components/data-upload/FileUpload';
 import { 
   generateMockDeliveryData, 
   calculateDriverMetrics, 
@@ -72,12 +71,7 @@ const Index = () => {
     <Routes>
       <Route path="/" element={<DashboardLayout />}>
         <Route index element={
-          <>
-            <div className="mb-6">
-              <FileUpload onDataUploaded={handleDataUploaded} />
-            </div>
-            <Dashboard deliveryData={deliveryData} driverData={driverData} />
-          </>
+          <Dashboard deliveryData={deliveryData} driverData={driverData} />
         } />
         <Route path="map" element={<MapView />} />
         <Route path="drivers" element={<Drivers driverData={driverData} />} />

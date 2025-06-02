@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,10 +28,10 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
     customers: []
   });
 
-  // Aplicar todos os filtros aos dados
+  // Apply all filters to the data
   const filteredDeliveries = useMemo(() => {
     return deliveries.filter(delivery => {
-      // Filtro de data
+      // Date filter
       if (filters.dateFrom && delivery.created_at) {
         const deliveryDate = parseISO(delivery.created_at);
         const fromDate = parseISO(filters.dateFrom);
@@ -43,30 +44,30 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
         if (isAfter(deliveryDate, toDate)) return false;
       }
 
-      // Filtro de status
+      // Status filter
       if (filters.status.length > 0 && delivery.status) {
         if (!filters.status.includes(delivery.status)) return false;
       }
 
-      // Filtro de motoristas
+      // Driver filter
       if (filters.drivers.length > 0) {
         const deliveryDriver = delivery.delivering_driver || delivery.collecting_driver;
         if (!deliveryDriver || !filters.drivers.includes(deliveryDriver)) return false;
       }
 
-      // Filtro de áreas
+      // Area filter
       if (filters.areas.length > 0 && delivery.delivery_address) {
         const addressParts = delivery.delivery_address.split(',');
         const area = addressParts[addressParts.length - 1]?.trim();
         if (!area || !filters.areas.includes(area)) return false;
       }
 
-      // Filtro de tipos de serviço
+      // Service type filter
       if (filters.serviceTypes.length > 0 && delivery.service_type) {
         if (!filters.serviceTypes.includes(delivery.service_type)) return false;
       }
 
-      // Filtro de clientes
+      // Customer filter
       if (filters.customers.length > 0 && delivery.customer_name) {
         if (!filters.customers.includes(delivery.customer_name)) return false;
       }
@@ -76,10 +77,10 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
   }, [deliveries, filters]);
 
   const analysisData = useMemo(() => {
-    // 1. Análise Geral de Entregas
+    // 1. General Delivery Analysis
     const totalDeliveries = filteredDeliveries.length;
     
-    // Calcular tempo médio de entrega
+    // Calculate average delivery time
     let totalDurationMinutes = 0;
     let deliveriesWithDuration = 0;
     
@@ -100,13 +101,13 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
       ? Math.round(totalDurationMinutes / deliveriesWithDuration) 
       : 0;
     
-    // Calcular distância média
+    // Calculate average distance
     const deliveriesWithDistance = filteredDeliveries.filter(d => d.distance && d.distance > 0);
     const avgDistance = deliveriesWithDistance.length > 0
       ? deliveriesWithDistance.reduce((sum, d) => sum + (d.distance || 0), 0) / deliveriesWithDistance.length
       : 0;
     
-    // Taxa de sucesso vs problemas
+    // Success rate vs problems
     const statusCounts = filteredDeliveries.reduce((acc, d) => {
       const status = d.status || 'unknown';
       acc[status] = (acc[status] || 0) + 1;
@@ -116,7 +117,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
     const successfulDeliveries = statusCounts['delivered'] || 0;
     const successRate = totalDeliveries > 0 ? (successfulDeliveries / totalDeliveries) * 100 : 0;
     
-    // Horários de pico
+    // Peak hours
     const hourCounts = filteredDeliveries.reduce((acc, d) => {
       if (d.created_at) {
         const hour = parseISO(d.created_at).getHours();
@@ -130,10 +131,10 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
       .slice(0, 3)
       .map(([hour, count]) => ({ hour: parseInt(hour), count }));
     
-    // Áreas geográficas
+    // Geographic areas
     const areaCounts = filteredDeliveries.reduce((acc, d) => {
       if (d.delivery_address) {
-        // Extrair área aproximada do endereço
+        // Extract approximate area from address
         const addressParts = d.delivery_address.split(',');
         const area = addressParts[addressParts.length - 1]?.trim() || 'Unknown';
         acc[area] = (acc[area] || 0) + 1;
@@ -145,7 +146,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
       .sort(([, a], [, b]) => b - a)
       .slice(0, 5);
     
-    // 2. Análise de Motoristas
+    // 2. Driver Analysis
     const driverStats = filteredDeliveries.reduce((acc, d) => {
       const driver = d.delivering_driver || d.collecting_driver || 'Unknown';
       if (!acc[driver]) {
@@ -190,7 +191,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
       .sort((a, b) => a.successRate - b.successRate || b.avgDeliveryTime - a.avgDeliveryTime)
       .slice(0, 3);
     
-    // 3. Análise de Clientes
+    // 3. Customer Analysis
     const customerStats = filteredDeliveries.reduce((acc, d) => {
       const customer = d.customer_name || 'Unknown';
       if (!acc[customer]) {
@@ -230,7 +231,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
       .sort((a, b) => b.totalOrders - a.totalOrders)
       .slice(0, 5);
     
-    // Calcular receita total
+    // Calculate total revenue
     const totalRevenue = filteredDeliveries.reduce((sum, d) => sum + (d.cost || 0), 0);
     const avgOrderValue = totalDeliveries > 0 ? totalRevenue / totalDeliveries : 0;
     
@@ -261,7 +262,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
     };
   }, [filteredDeliveries]);
 
-  // Verificar se há filtros ativos
+  // Check if there are active filters
   const hasActiveFilters = useMemo(() => {
     return filters.dateFrom || filters.dateTo || 
            filters.status.length > 0 || 
@@ -277,8 +278,8 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhum dado de delivery disponível para análise.</p>
-            <p className="text-sm mt-2">Importe dados de delivery para visualizar as análises.</p>
+            <p>No delivery data available for analysis.</p>
+            <p className="text-sm mt-2">Import delivery data to view analytics.</p>
           </div>
         </CardContent>
       </Card>
@@ -288,22 +289,22 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold mb-2">Sistema Avançado de Análise de Delivery</h1>
-        <p className="text-muted-foreground">Análise completa de performance e otimização de entregas</p>
+        <h1 className="text-3xl font-bold mb-2">Advanced Delivery Analysis System</h1>
+        <p className="text-muted-foreground">Complete performance analysis and delivery optimization</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}
+          Generated on {format(new Date(), 'MM/dd/yyyy HH:mm')}
         </p>
         {hasActiveFilters && (
           <div className="mt-3">
             <Badge variant="outline" className="flex items-center gap-2 w-fit mx-auto">
               <Filter className="h-3 w-3" />
-              Análise com filtros aplicados ({filteredDeliveries.length} de {deliveries.length} entregas)
+              Analysis with applied filters ({filteredDeliveries.length} of {deliveries.length} deliveries)
             </Badge>
           </div>
         )}
       </div>
 
-      {/* Sistema de Filtros Avançados */}
+      {/* Advanced Filters System */}
       <AdvancedFilters
         deliveries={deliveries}
         filters={filters}
@@ -315,8 +316,8 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
           <CardContent className="pt-6">
             <div className="text-center text-muted-foreground">
               <Filter className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Nenhum dado encontrado para os filtros aplicados.</p>
-              <p className="text-sm mt-2">Ajuste os filtros para visualizar as análises.</p>
+              <p>No data found for the applied filters.</p>
+              <p className="text-sm mt-2">Adjust the filters to view analytics.</p>
             </div>
           </CardContent>
         </Card>
@@ -329,54 +330,54 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
             </TabsTrigger>
             <TabsTrigger value="alerts" className="flex items-center gap-2">
               <Bell className="h-4 w-4" />
-              Alertas
+              Alerts
             </TabsTrigger>
             <TabsTrigger value="efficiency" className="flex items-center gap-2">
               <Trophy className="h-4 w-4" />
-              Eficiência
+              Efficiency
             </TabsTrigger>
             <TabsTrigger value="routes" className="flex items-center gap-2">
               <Route className="h-4 w-4" />
-              Rotas
+              Routes
             </TabsTrigger>
             <TabsTrigger value="drivers" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              Motoristas
+              Drivers
             </TabsTrigger>
             <TabsTrigger value="analysis" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              Análise
+              Analysis
             </TabsTrigger>
           </TabsList>
 
-          {/* Dashboard de Performance em Tempo Real */}
+          {/* Real-Time Performance Dashboard */}
           <TabsContent value="dashboard">
             <RealTimePerformanceDashboard deliveries={filteredDeliveries} />
           </TabsContent>
 
-          {/* Sistema de Alertas Inteligentes */}
+          {/* Smart Alerts System */}
           <TabsContent value="alerts">
             <SmartAlerts deliveries={filteredDeliveries} />
           </TabsContent>
 
-          {/* Sistema de Scoring de Eficiência */}
+          {/* Efficiency Scoring System */}
           <TabsContent value="efficiency">
             <DriverEfficiencyScoring deliveries={filteredDeliveries} />
           </TabsContent>
 
-          {/* Análise de Rotas e Otimização */}
+          {/* Route Analysis and Optimization */}
           <TabsContent value="routes">
             <RouteOptimizationAnalysis deliveries={filteredDeliveries} />
           </TabsContent>
 
-          {/* Análise Detalhada de Motoristas */}
+          {/* Detailed Driver Analysis */}
           <TabsContent value="drivers">
             <div className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-green-600" />
-                    Análise Detalhada por Motorista
+                    Detailed Driver Analysis
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -386,18 +387,18 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
             </div>
           </TabsContent>
 
-          {/* Análise Tradicional (Original) */}
+          {/* Traditional Analysis (Original) */}
           <TabsContent value="analysis">
             <div className="space-y-8">
-              {/* 1. Análise Geral de Entregas */}
+              {/* 1. General Delivery Analysis */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5 text-blue-600" />
-                    1. Análise Geral de Entregas
+                    1. General Delivery Analysis
                     {hasActiveFilters && (
                       <Badge variant="outline" className="text-xs">
-                        {filteredDeliveries.length} entregas filtradas
+                        {filteredDeliveries.length} filtered deliveries
                       </Badge>
                     )}
                   </CardTitle>
@@ -406,19 +407,19 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">{analysisData.general.totalDeliveries}</div>
-                      <div className="text-sm text-muted-foreground">Total de Entregas</div>
+                      <div className="text-sm text-muted-foreground">Total Deliveries</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">{analysisData.general.avgDeliveryTime} min</div>
-                      <div className="text-sm text-muted-foreground">Tempo Médio</div>
+                      <div className="text-sm text-muted-foreground">Average Time</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">{analysisData.general.avgDistance} km</div>
-                      <div className="text-sm text-muted-foreground">Distância Média</div>
+                      <div className="text-sm text-muted-foreground">Average Distance</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-orange-600">{analysisData.general.successRate}%</div>
-                      <div className="text-sm text-muted-foreground">Taxa de Sucesso</div>
+                      <div className="text-sm text-muted-foreground">Success Rate</div>
                     </div>
                   </div>
 
@@ -428,7 +429,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                     <div>
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        Status das Entregas
+                        Delivery Status
                       </h4>
                       <div className="space-y-2">
                         {Object.entries(analysisData.general.statusCounts).map(([status, count]) => (
@@ -445,7 +446,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                     <div>
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <Zap className="h-4 w-4" />
-                        Horários de Pico
+                        Peak Hours
                       </h4>
                       <div className="space-y-2">
                         {analysisData.general.peakHours.map(({ hour, count }, index) => (
@@ -455,7 +456,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                                 {hour}:00 - {hour + 1}:00
                               </Badge>
                             </div>
-                            <span className="font-semibold">{count} pedidos</span>
+                            <span className="font-semibold">{count} orders</span>
                           </div>
                         ))}
                       </div>
@@ -465,7 +466,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                   <div>
                     <h4 className="font-semibold mb-3 flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      Áreas com Maior Volume
+                      Areas with Highest Volume
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                       {analysisData.general.topAreas.slice(0, 5).map(([area, count], index) => (
@@ -482,35 +483,35 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                       <div className="text-xl font-bold text-green-600">
                         ${analysisData.general.totalRevenue.toLocaleString()}
                       </div>
-                      <div className="text-sm text-muted-foreground">Receita Total</div>
+                      <div className="text-sm text-muted-foreground">Total Revenue</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xl font-bold text-blue-600">
                         ${analysisData.general.avgOrderValue.toFixed(2)}
                       </div>
-                      <div className="text-sm text-muted-foreground">Valor Médio por Pedido</div>
+                      <div className="text-sm text-muted-foreground">Average Order Value</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* 2. Análise de Motoristas */}
+              {/* 2. Driver Analysis */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-green-600" />
-                    2. Análise de Motoristas (Drivers)
+                    2. Driver Analysis
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">{analysisData.drivers.totalActiveDrivers}</div>
-                      <div className="text-sm text-muted-foreground">Motoristas Ativos</div>
+                      <div className="text-sm text-muted-foreground">Active Drivers</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">{analysisData.drivers.avgDeliveriesPerDriver}</div>
-                      <div className="text-sm text-muted-foreground">Entregas Médias/Motorista</div>
+                      <div className="text-sm text-muted-foreground">Average Deliveries/Driver</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
@@ -519,7 +520,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                           : 'N/A'
                         }
                       </div>
-                      <div className="text-sm text-muted-foreground">Melhor Taxa de Sucesso</div>
+                      <div className="text-sm text-muted-foreground">Best Success Rate</div>
                     </div>
                   </div>
 
@@ -542,15 +543,15 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               <div>
-                                <div className="text-muted-foreground">Entregas</div>
+                                <div className="text-muted-foreground">Deliveries</div>
                                 <div className="font-semibold">{driver.totalDeliveries}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Taxa Sucesso</div>
+                                <div className="text-muted-foreground">Success Rate</div>
                                 <div className="font-semibold">{driver.successRate.toFixed(1)}%</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Tempo Médio</div>
+                                <div className="text-muted-foreground">Avg Time</div>
                                 <div className="font-semibold">{driver.avgDeliveryTime} min</div>
                               </div>
                             </div>
@@ -562,7 +563,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                     <div>
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-orange-500" />
-                        Necessitam Atenção
+                        Need Attention
                       </h4>
                       <div className="space-y-3">
                         {analysisData.drivers.strugglingDrivers.map((driver, index) => (
@@ -570,20 +571,20 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                             <div className="flex justify-between items-start mb-2">
                               <div className="font-medium">{driver.name}</div>
                               <Badge variant="outline" className="border-orange-300 text-orange-700">
-                                Atenção
+                                Attention
                               </Badge>
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               <div>
-                                <div className="text-muted-foreground">Entregas</div>
+                                <div className="text-muted-foreground">Deliveries</div>
                                 <div className="font-semibold">{driver.totalDeliveries}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Taxa Sucesso</div>
+                                <div className="text-muted-foreground">Success Rate</div>
                                 <div className="font-semibold text-orange-600">{driver.successRate.toFixed(1)}%</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Tempo Médio</div>
+                                <div className="text-muted-foreground">Avg Time</div>
                                 <div className="font-semibold">{driver.avgDeliveryTime} min</div>
                               </div>
                             </div>
@@ -595,29 +596,29 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                 </CardContent>
               </Card>
 
-              {/* 3. Análise de Clientes */}
+              {/* 3. Customer Analysis */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-purple-600" />
-                    3. Análise de Clientes (Customers)
+                    3. Customer Analysis
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">{analysisData.customers.totalActiveCustomers}</div>
-                      <div className="text-sm text-muted-foreground">Clientes Ativos</div>
+                      <div className="text-sm text-muted-foreground">Active Customers</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">{analysisData.customers.avgOrdersPerCustomer}</div>
-                      <div className="text-sm text-muted-foreground">Pedidos Médios/Cliente</div>
+                      <div className="text-sm text-muted-foreground">Average Orders/Customer</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
                         ${analysisData.customers.valuableCustomers[0]?.totalSpent.toFixed(2) || '0.00'}
                       </div>
-                      <div className="text-sm text-muted-foreground">Maior Valor Gasto</div>
+                      <div className="text-sm text-muted-foreground">Highest Spend</div>
                     </div>
                   </div>
 
@@ -627,7 +628,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                     <div>
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-green-500" />
-                        Clientes Mais Valiosos (por valor)
+                        Most Valuable Customers (by value)
                       </h4>
                       <div className="space-y-3">
                         {analysisData.customers.valuableCustomers.map((customer, index) => (
@@ -640,15 +641,15 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               <div>
-                                <div className="text-muted-foreground">Pedidos</div>
+                                <div className="text-muted-foreground">Orders</div>
                                 <div className="font-semibold">{customer.totalOrders}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Ticket Médio</div>
+                                <div className="text-muted-foreground">Avg Ticket</div>
                                 <div className="font-semibold">${customer.avgOrderValue.toFixed(2)}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Endereços</div>
+                                <div className="text-muted-foreground">Addresses</div>
                                 <div className="font-semibold">{customer.addressCount}</div>
                               </div>
                             </div>
@@ -660,7 +661,7 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                     <div>
                       <h4 className="font-semibold mb-3 flex items-center gap-2">
                         <Package className="h-4 w-4 text-blue-500" />
-                        Clientes Mais Frequentes (por volume)
+                        Most Frequent Customers (by volume)
                       </h4>
                       <div className="space-y-3">
                         {analysisData.customers.frequentCustomers.map((customer, index) => (
@@ -668,20 +669,20 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                             <div className="flex justify-between items-start mb-2">
                               <div className="font-medium">{customer.name}</div>
                               <Badge className="bg-blue-100 text-blue-800">
-                                {customer.totalOrders} pedidos
+                                {customer.totalOrders} orders
                               </Badge>
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               <div>
-                                <div className="text-muted-foreground">Valor Total</div>
+                                <div className="text-muted-foreground">Total Value</div>
                                 <div className="font-semibold">${customer.totalSpent.toFixed(2)}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Ticket Médio</div>
+                                <div className="text-muted-foreground">Avg Ticket</div>
                                 <div className="font-semibold">${customer.avgOrderValue.toFixed(2)}</div>
                               </div>
                               <div>
-                                <div className="text-muted-foreground">Endereços</div>
+                                <div className="text-muted-foreground">Addresses</div>
                                 <div className="font-semibold">{customer.addressCount}</div>
                               </div>
                             </div>
@@ -693,12 +694,12 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                 </CardContent>
               </Card>
 
-              {/* 4. Seção de Análise Específica de Cliente */}
+              {/* 4. Specific Customer Analysis Section */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-orange-600" />
-                    4. Análise Específica de Cliente
+                    4. Specific Customer Analysis
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -706,15 +707,15 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                 </CardContent>
               </Card>
 
-              {/* Insights e Recomendações */}
+              {/* Insights and Recommendations */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <TrendingUp className="h-5 w-5 text-indigo-600" />
-                    Insights e Recomendações
+                    Insights and Recommendations
                     {hasActiveFilters && (
                       <Badge variant="outline" className="text-xs">
-                        Baseado nos filtros aplicados
+                        Based on applied filters
                       </Badge>
                     )}
                   </CardTitle>
@@ -722,39 +723,39 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
                 <CardContent className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="p-4 bg-blue-50 rounded-lg">
-                      <h4 className="font-semibold text-blue-800 mb-2">📈 Oportunidades de Crescimento</h4>
+                      <h4 className="font-semibold text-blue-800 mb-2">📈 Growth Opportunities</h4>
                       <ul className="text-sm text-blue-700 space-y-1">
-                        <li>• Focar nos horários de pico identificados para otimizar recursos</li>
-                        <li>• Expandir operações nas áreas de maior demanda</li>
-                        <li>• Implementar programas de fidelidade para clientes valiosos</li>
+                        <li>• Focus on identified peak hours to optimize resources</li>
+                        <li>• Expand operations in high-demand areas</li>
+                        <li>• Implement loyalty programs for valuable customers</li>
                         {hasActiveFilters && (
-                          <li>• Replicar estratégias bem-sucedidas nos segmentos filtrados</li>
+                          <li>• Replicate successful strategies in filtered segments</li>
                         )}
                       </ul>
                     </div>
                     
                     <div className="p-4 bg-orange-50 rounded-lg">
-                      <h4 className="font-semibold text-orange-800 mb-2">⚠️ Áreas de Melhoria</h4>
+                      <h4 className="font-semibold text-orange-800 mb-2">⚠️ Areas for Improvement</h4>
                       <ul className="text-sm text-orange-700 space-y-1">
-                        <li>• Treinar motoristas com baixa taxa de sucesso</li>
-                        <li>• Otimizar rotas para reduzir tempo médio de entrega</li>
-                        <li>• Monitorar entregas problemáticas para identificar padrões</li>
+                        <li>• Train drivers with low success rates</li>
+                        <li>• Optimize routes to reduce average delivery time</li>
+                        <li>• Monitor problematic deliveries to identify patterns</li>
                         {hasActiveFilters && (
-                          <li>• Atenção especial aos segmentos analisados</li>
+                          <li>• Special attention to analyzed segments</li>
                         )}
                       </ul>
                     </div>
                   </div>
                   
                   <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-semibold text-green-800 mb-2">✅ Próximos Passos Recomendados</h4>
+                    <h4 className="font-semibold text-green-800 mb-2">✅ Recommended Next Steps</h4>
                     <ol className="text-sm text-green-700 space-y-1">
-                      <li>1. Implementar sistema de avaliação em tempo real para motoristas</li>
-                      <li>2. Criar dashboard de acompanhamento de KPIs por região</li>
-                      <li>3. Desenvolver sistema de previsão de demanda baseado nos padrões identificados</li>
-                      <li>4. Estabelecer metas de performance para cada motorista</li>
+                      <li>1. Implement real-time driver performance evaluation system</li>
+                      <li>2. Create KPI monitoring dashboard by region</li>
+                      <li>3. Develop demand forecasting system based on identified patterns</li>
+                      <li>4. Establish performance targets for each driver</li>
                       {hasActiveFilters && (
-                        <li>5. Criar ações específicas para os segmentos analisados</li>
+                        <li>5. Create specific actions for analyzed segments</li>
                       )}
                     </ol>
                   </div>
@@ -768,4 +769,4 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
   );
 };
 
-export default DeliveryAnalysisReport; 
+export default DeliveryAnalysisReport;

@@ -22,8 +22,8 @@ const DeliveryAnalysisPage: React.FC = () => {
         const result = await fetchDeliveryData();
         
         if (result.error || !result.data || result.data.length === 0) {
-          // Se não há dados reais, usar dados mock para demonstração
-          console.log('Usando dados mock para demonstração');
+          // If there's no real data, use mock data for demonstration
+          console.log('Using mock data for demonstration');
           const mockData = generateMockFoxDeliveries(150);
           setDeliveries(mockData);
           setUsingMockData(true);
@@ -32,8 +32,8 @@ const DeliveryAnalysisPage: React.FC = () => {
           setUsingMockData(false);
         }
       } catch (err) {
-        console.error('Erro ao carregar dados:', err);
-        // Em caso de erro, ainda assim usar dados mock
+        console.error('Error loading data:', err);
+        // In case of error, still use mock data
         const mockData = generateMockFoxDeliveries(150);
         setDeliveries(mockData);
         setUsingMockData(true);
@@ -50,7 +50,7 @@ const DeliveryAnalysisPage: React.FC = () => {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando dados de delivery...</p>
+          <p className="text-muted-foreground">Loading delivery data...</p>
         </div>
       </div>
     );
@@ -62,8 +62,8 @@ const DeliveryAnalysisPage: React.FC = () => {
         <Alert className="mb-6">
           <Info className="h-4 w-4" />
           <AlertDescription>
-            <strong>Dados de Demonstração:</strong> Este relatório está usando dados simulados para demonstração. 
-            To see real analysis, import your delivery data into the system.
+            <strong>Demo Data:</strong> This report is using simulated data for demonstration purposes. 
+            To see real analytics, import your delivery data into the system.
           </AlertDescription>
         </Alert>
       )}
@@ -72,4 +72,4 @@ const DeliveryAnalysisPage: React.FC = () => {
   );
 };
 
-export default DeliveryAnalysisPage; 
+export default DeliveryAnalysisPage;

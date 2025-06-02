@@ -1,78 +1,85 @@
 
 import React, { useState, useEffect } from 'react';
 import DeliveryMap from '@/components/map/DeliveryMap';
+import EmptyState from '@/components/dashboard/EmptyState';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { X, Calendar as CalendarIcon, Filter } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Filter, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import type { FoxDelivery, DeliveryMapFilters } from '@/types/delivery';
-import { fetchDeliveryDataWithRoutes } from '@/services/deliveryService';
+import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
+import { filterDeliveries } from '@/features/deliveries/utils/deliveryUtils';
+import type { DeliveryFilters } from '@/features/deliveries/types';
 import { cn } from '@/lib/utils';
 
 const MapView: React.FC = () => {
-  const [deliveryData, setDeliveryData] = useState<FoxDelivery[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [drivers, setDrivers] = useState<string[]>([]);
-  const [customers, setCustomers] = useState<string[]>([]);
-  const [filters, setFilters] = useState<DeliveryMapFilters>({});
+  const { deliveryData: allDeliveryData, loading, error } = useDeliveryData();
+  const [filters, setFilters] = useState<DeliveryFilters>({});
   const [showFilters, setShowFilters] = useState<boolean>(false);
 
-  useEffect(() => {
-    loadDeliveryData();
-  }, []);
+  // Filter data based on current filters
+  const filteredDeliveryData = filterDeliveries(allDeliveryData, filters);
 
-  const loadDeliveryData = async () => {
-    setLoading(true);
-    const { data, error } = await fetchDeliveryDataWithRoutes({
-      driverId: filters.driver,
-      customerId: filters.customer,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-      status: filters.status
-    });
+  // Extract unique drivers and customers for filter options
+  const drivers = Array.from(new Set(allDeliveryData.map(d => d.driverName))).sort();
+  const customers = Array.from(new Set(allDeliveryData.map(d => d.customerName))).sort();
 
-    if (error) {
-      setError(error);
-    } else if (data) {
-      setDeliveryData(data);
-      
-      // Extract unique drivers and customers for filters
-      const uniqueDrivers = new Set<string>();
-      const uniqueCustomers = new Set<string>();
-      
-      data.forEach(delivery => {
-        if (delivery.collecting_driver) uniqueDrivers.add(delivery.collecting_driver);
-        if (delivery.delivering_driver) uniqueDrivers.add(delivery.delivering_driver);
-        if (delivery.customer_name) uniqueCustomers.add(delivery.customer_name);
-      });
-      
-      setDrivers(Array.from(uniqueDrivers).sort());
-      setCustomers(Array.from(uniqueCustomers).sort());
-    }
-    
-    setLoading(false);
-  };
-
-  const handleFilterChange = (key: keyof DeliveryMapFilters, value: any) => {
+  const handleFilterChange = (key: keyof DeliveryFilters, value: any) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const handleApplyFilters = () => {
-    loadDeliveryData();
-  };
-
   const clearFilters = () => {
     setFilters({});
-    loadDeliveryData();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="w-96">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              Loading Map Data
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="w-96">
+          <CardHeader className="text-center">
+            <CardTitle className="text-red-600">Error Loading Map Data</CardTitle>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </CardContent>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show empty state if no data
+  if (allDeliveryData.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Map View</h1>
+          <p className="text-muted-foreground">Visualize all delivery locations and their routes on the map.</p>
+        </div>
+        <EmptyState />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -107,8 +114,8 @@ const MapView: React.FC = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Driver</label>
                 <Select
-                  value={filters.driver}
-                  onValueChange={(value) => handleFilterChange('driver', value)}
+                  value={filters.driverId}
+                  onValueChange={(value) => handleFilterChange('driverId', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select driver" />
@@ -126,8 +133,8 @@ const MapView: React.FC = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Customer</label>
                 <Select
-                  value={filters.customer}
-                  onValueChange={(value) => handleFilterChange('customer', value)}
+                  value={filters.customerId}
+                  onValueChange={(value) => handleFilterChange('customerId', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select customer" />
@@ -213,7 +220,7 @@ const MapView: React.FC = () => {
               </div>
               
               <div className="flex items-end">
-                <Button onClick={handleApplyFilters} className="w-full">Apply Filters</Button>
+                <Button onClick={() => {}} className="w-full">Apply Filters</Button>
               </div>
             </div>
           </CardContent>
@@ -234,7 +241,7 @@ const MapView: React.FC = () => {
               <p className="text-red-500">Error: {error}</p>
             </div>
           ) : (
-            <DeliveryMap deliveries={deliveryData} />
+            <DeliveryMap deliveries={filteredDeliveryData} />
           )}
         </CardContent>
       </Card>

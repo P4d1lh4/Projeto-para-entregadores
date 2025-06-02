@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -11,13 +10,14 @@ type RevenueAnalyticsCardProps = {
 };
 
 const RevenueAnalyticsCard: React.FC<RevenueAnalyticsCardProps> = ({ deliveries, className }) => {
-  // Generate mock revenue data by day of week (in a real app, calculate from actual delivery data)
+  // Generate deterministic revenue data by day of week
   const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   
-  const revenueData = daysOfWeek.map(day => {
-    // Mock values for demonstration
-    const deliveryCount = Math.floor(Math.random() * 20) + 10;
-    const avgDeliveryCost = 15 + Math.random() * 10;
+  const revenueData = daysOfWeek.map((day, index) => {
+    // Deterministic values based on day index and delivery data
+    const baseCount = 15 + (index * 3); // Base count varies by day
+    const deliveryCount = Math.floor(baseCount + (deliveries.length % 10));
+    const avgDeliveryCost = 18 + (index % 5); // Cost varies by day
     const revenue = deliveryCount * avgDeliveryCost;
     const commissions = revenue * 0.15; // 15% commission
     

@@ -1,70 +1,76 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import Dashboard from '@/pages/Dashboard';
-import MapView from '@/pages/MapView';
 import Drivers from '@/pages/Drivers';
 import Deliveries from '@/pages/Deliveries';
 import Customers from '@/pages/Customers';
 import Settings from '@/pages/Settings';
 import DataImport from '@/pages/DataImport';
 import Analytics from '@/pages/Analytics';
-import { 
-  generateMockDeliveryData, 
-  calculateDriverMetrics, 
-  calculateCustomerMetrics, 
-  DeliveryData, 
-  DriverData, 
-  CustomerData 
-} from '@/lib/file-utils';
+import AIAssistantPage from '@/pages/AIAssistantPage';
+import DeliveryAnalysis from '@/pages/DeliveryAnalysis';
+import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const Index = () => {
-  const [deliveryData, setDeliveryData] = useState<DeliveryData[]>([]);
-  const [driverData, setDriverData] = useState<DriverData[]>([]);
-  const [customerData, setCustomerData] = useState<CustomerData[]>([]);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const { deliveryData, driverData, customerData, loading, error, updateData } = useDeliveryData();
   
-  useEffect(() => {
-    // Check if we have data in localStorage
-    const storedData = localStorage.getItem('foxDeliveryData');
-    
-    if (storedData) {
-      try {
-        const parsedData = JSON.parse(storedData) as DeliveryData[];
-        setDeliveryData(parsedData);
-        setDriverData(calculateDriverMetrics(parsedData));
-        setCustomerData(calculateCustomerMetrics(parsedData));
-        setIsFirstLoad(false);
-      } catch (error) {
-        console.error('Error parsing stored data:', error);
-        // If there's an error, generate mock data
-        loadMockData();
-      }
-    } else {
-      // No stored data, generate mock data
-      loadMockData();
+  // Debug logs mais detalhados
+  console.log('🏠 INDEX PAGE DEBUG:');
+  console.log('- Component rendered');
+  console.log('- loading:', loading);
+  console.log('- error:', error);
+  console.log('- deliveryData:', deliveryData, 'length:', deliveryData?.length);
+  console.log('- driverData:', driverData, 'length:', driverData?.length);
+  console.log('- customerData:', customerData, 'length:', customerData?.length);
+  
+  const handleDataUploaded = async (newData: any[]) => {
+    try {
+      await updateData(newData);
+    } catch (err) {
+      console.error('Error uploading data:', err);
     }
-  }, []);
-  
-  const loadMockData = () => {
-    const mockData = generateMockDeliveryData(50);
-    setDeliveryData(mockData);
-    setDriverData(calculateDriverMetrics(mockData));
-    setCustomerData(calculateCustomerMetrics(mockData));
-    localStorage.setItem('foxDeliveryData', JSON.stringify(mockData));
-    setIsFirstLoad(false);
   };
   
-  const handleDataUploaded = (newData: DeliveryData[]) => {
-    setDeliveryData(newData);
-    setDriverData(calculateDriverMetrics(newData));
-    setCustomerData(calculateCustomerMetrics(newData));
-    localStorage.setItem('foxDeliveryData', JSON.stringify(newData));
-  };
-  
-  if (isFirstLoad) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="w-96">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              Loading Dashboard
+            </CardTitle>
+            <CardDescription>
+              Initializing delivery data and analytics...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error && deliveryData.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="w-96">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2 text-red-600">
+              <AlertCircle className="h-6 w-6" />
+              Error Loading Data
+            </CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Please try uploading a data file to get started.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
   
   return (
@@ -73,13 +79,14 @@ const Index = () => {
         <Route index element={
           <Dashboard deliveryData={deliveryData} driverData={driverData} />
         } />
-        <Route path="map" element={<MapView />} />
         <Route path="drivers" element={<Drivers driverData={driverData} />} />
         <Route path="deliveries" element={<Deliveries deliveryData={deliveryData} />} />
         <Route path="customers" element={<Customers customerData={customerData} />} />
         <Route path="analytics" element={<Analytics deliveryData={deliveryData} driverData={driverData} customerData={customerData} />} />
+        <Route path="ai-assistant" element={<AIAssistantPage />} />
         <Route path="data-import" element={<DataImport />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="delivery-analysis" element={<DeliveryAnalysis />} />
       </Route>
     </Routes>
   );

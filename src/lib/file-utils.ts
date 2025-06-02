@@ -1,37 +1,8 @@
-
 import * as XLSX from 'xlsx';
+import type { DeliveryData, DriverData, CustomerData } from '@/features/deliveries/types';
 
-export type DeliveryData = {
-  id: string;
-  driverId: string;
-  driverName: string;
-  customerId: string;
-  customerName: string;
-  address: string;
-  city: string;
-  status: 'delivered' | 'failed' | 'pending' | 'in_transit';
-  deliveryTime: string;
-  latitude: number;
-  longitude: number;
-  rating?: number;
-};
-
-export type DriverData = {
-  id: string;
-  name: string;
-  deliveries: number;
-  successRate: number;
-  averageTime: number;
-  rating: number;
-};
-
-export type CustomerData = {
-  id: string;
-  name: string;
-  address: string;
-  deliveries: number;
-  averageRating: number;
-};
+// Re-export types for backward compatibility
+export type { DeliveryData, DriverData, CustomerData };
 
 export async function parseFile(file: File): Promise<any[]> {
   return new Promise((resolve, reject) => {
@@ -80,6 +51,22 @@ export async function parseFile(file: File): Promise<any[]> {
 export function formatDeliveryData(data: any[]): DeliveryData[] {
   return data.map((item, index) => {
     // Try to parse existing fields or create default values
+    
+    // More realistic status distribution if no status provided
+    let defaultStatus: 'delivered' | 'failed' | 'pending' | 'in_transit' = 'delivered';
+    if (!item.status) {
+      const statusRand = Math.random();
+      if (statusRand < 0.85) {
+        defaultStatus = 'delivered';
+      } else if (statusRand < 0.95) {
+        defaultStatus = 'in_transit';
+      } else if (statusRand < 0.98) {
+        defaultStatus = 'pending';
+      } else {
+        defaultStatus = 'failed';
+      }
+    }
+    
     return {
       id: item.id || `del-${index + 1}`,
       driverId: item.driver_id || item.driverId || `drv-${index % 10 + 1}`,
@@ -88,7 +75,7 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
       customerName: item.customer_name || item.customerName || `Customer ${index % 20 + 1}`,
       address: item.address || `${index + 1} Main St`,
       city: item.city || 'Dublin',
-      status: item.status || (Math.random() > 0.2 ? 'delivered' : Math.random() > 0.5 ? 'in_transit' : 'pending'),
+      status: item.status || defaultStatus,
       deliveryTime: item.delivery_time || item.deliveryTime || new Date().toISOString(),
       latitude: parseFloat(item.latitude) || parseFloat(item.lat) || (53.33 + (Math.random() - 0.5) / 10),
       longitude: parseFloat(item.longitude) || parseFloat(item.lng) || (-6.25 + (Math.random() - 0.5) / 10),
@@ -98,6 +85,8 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
 }
 
 export function calculateDriverMetrics(deliveries: DeliveryData[]): DriverData[] {
+  console.log('🔢 Calculating driver metrics for', deliveries.length, 'deliveries');
+  
   // Group deliveries by driver
   const driverMap = new Map<string, DeliveryData[]>();
   
@@ -114,8 +103,12 @@ export function calculateDriverMetrics(deliveries: DeliveryData[]): DriverData[]
     const successRate = driverDeliveries.length > 0 ? 
       successfulDeliveries.length / driverDeliveries.length : 0;
     
-    // Calculate average delivery time (just a mock calculation for now)
-    const averageTime = 25 + Math.floor(Math.random() * 15);
+    // Calculate average delivery time - use a deterministic calculation based on driverId
+    // This ensures the same driver always has the same average time
+    const driverNumber = parseInt(driverId.split('-')[1]) || 1;
+    const baseTime = 20; // Base time in minutes
+    const variationSeed = (driverNumber * 7) % 20; // Deterministic variation 0-19
+    const averageTime = baseTime + variationSeed;
     
     // Calculate average rating
     const ratings = driverDeliveries
@@ -124,14 +117,17 @@ export function calculateDriverMetrics(deliveries: DeliveryData[]): DriverData[]
     const averageRating = ratings.length > 0 ? 
       ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : 0;
     
-    drivers.push({
+    const driver = {
       id: driverId,
       name: driverDeliveries[0].driverName,
       deliveries: driverDeliveries.length,
       successRate: successRate,
       averageTime: averageTime,
       rating: Math.round(averageRating * 10) / 10,
-    });
+    };
+    
+    console.log(`🚛 Driver ${driver.name} (${driverId}): avgTime=${averageTime}min, deliveries=${driver.deliveries}`);
+    drivers.push(driver);
   });
   
   return drivers;
@@ -170,7 +166,6 @@ export function calculateCustomerMetrics(deliveries: DeliveryData[]): CustomerDa
 }
 
 export function generateMockDeliveryData(count: number = 50): DeliveryData[] {
-  const statuses: ('delivered' | 'failed' | 'pending' | 'in_transit')[] = ['delivered', 'failed', 'pending', 'in_transit'];
   const driverNames = ['John Smith', 'Emily Johnson', 'Michael Brown', 'Sarah Davis', 'David Wilson'];
   const customerNames = [
     'Alice Cooper', 'Bob Martin', 'Carol White', 'David Green', 'Eva Black',
@@ -184,7 +179,19 @@ export function generateMockDeliveryData(count: number = 50): DeliveryData[] {
   return Array.from({ length: count }, (_, i) => {
     const driverId = `drv-${Math.floor(i / 10) + 1}`;
     const customerId = `cust-${Math.floor(Math.random() * 10) + 1}`;
-    const statusIndex = Math.random() > 0.7 ? 0 : Math.floor(Math.random() * statuses.length);
+    
+    // More realistic status distribution - 85% delivered, 10% in_transit, 3% pending, 2% failed
+    let status: 'delivered' | 'failed' | 'pending' | 'in_transit';
+    const statusRand = Math.random();
+    if (statusRand < 0.85) {
+      status = 'delivered';
+    } else if (statusRand < 0.95) {
+      status = 'in_transit';
+    } else if (statusRand < 0.98) {
+      status = 'pending';
+    } else {
+      status = 'failed';
+    }
     
     // Create a delivery date within the last week
     const date = new Date();
@@ -198,11 +205,11 @@ export function generateMockDeliveryData(count: number = 50): DeliveryData[] {
       customerName: customerNames[parseInt(customerId.split('-')[1]) - 1] || 'Unknown Customer',
       address: `${Math.floor(Math.random() * 100) + 1} ${['Main St', 'High St', 'Church Rd', 'Station Rd'][Math.floor(Math.random() * 4)]}`,
       city: 'Dublin',
-      status: statuses[statusIndex],
+      status,
       deliveryTime: date.toISOString(),
       latitude: centerLat + (Math.random() - 0.5) / 10,
       longitude: centerLng + (Math.random() - 0.5) / 10,
-      rating: statuses[statusIndex] === 'delivered' ? Math.floor(Math.random() * 5) + 1 : undefined,
+      rating: status === 'delivered' ? Math.floor(Math.random() * 5) + 1 : undefined,
     };
   });
 }

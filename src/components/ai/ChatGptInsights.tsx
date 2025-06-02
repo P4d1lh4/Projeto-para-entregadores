@@ -1,9 +1,13 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useOpenAI } from '@/hooks/useOpenAI';
+import { Brain, AlertCircle, CheckCircle, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type ChatGptInsightsProps = {
   deliveryData?: any[];
@@ -12,85 +16,210 @@ type ChatGptInsightsProps = {
 const ChatGptInsights: React.FC<ChatGptInsightsProps> = ({ deliveryData }) => {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { isReady, isLoading, error, chatWithAI, getDeliveryInsights, clearError } = useOpenAI();
   
   const handleSubmit = async () => {
     if (!prompt.trim()) {
       toast({
-        title: 'Please enter a question',
-        description: 'Enter a question about your delivery data to get insights.',
+        title: 'Digite uma pergunta',
+        description: 'Digite uma pergunta sobre seus dados de entrega para obter insights.',
         variant: 'destructive',
       });
       return;
     }
-    
-    setIsLoading(true);
-    
-    // This is a placeholder function that simulates an AI response
-    // In a real application, this would make an API call to an AI service
-    await simulateAiResponse(prompt);
-    
-    setIsLoading(false);
-  };
-  
-  // Function to simulate an AI response for demo purposes
-  const simulateAiResponse = async (prompt: string) => {
-    // Wait for 1-2 seconds to simulate network request
-    await new Promise((resolve) => setTimeout(resolve, 1000 + Math.random() * 1000));
-    
-    const dataSize = deliveryData?.length || 0;
-    
-    // Generate different responses based on the prompt
-    let responseText = '';
-    
-    if (prompt.toLowerCase().includes('performance')) {
-      responseText = `Based on the analysis of ${dataSize} deliveries, driver performance is generally positive. The average delivery success rate is 94.2%, with an average customer rating of 4.3/5. The top performing driver is Emily Johnson with a success rate of 98.7% and an average rating of 4.8/5. Areas for improvement include reducing average delivery time which is currently at 28 minutes.`;
-    } else if (prompt.toLowerCase().includes('improve') || prompt.toLowerCase().includes('optimize')) {
-      responseText = `To optimize your delivery operations, consider the following recommendations:\n\n1. Schedule deliveries during off-peak traffic hours to reduce transit time\n2. Implement route optimization to reduce driver travel distance\n3. Focus training on drivers with below-average ratings\n4. Consider expanding your delivery radius in high-demand areas like Dublin City Centre\n5. Implement a customer feedback loop to address recurring issues`;
-    } else if (prompt.toLowerCase().includes('customer') || prompt.toLowerCase().includes('satisfaction')) {
-      responseText = `Customer satisfaction data shows an overall positive trend with 87% of deliveries rated 4 stars or higher. The main factors affecting negative ratings are late deliveries and incorrect items. Consider implementing a real-time tracking system for customers and additional quality checks before dispatch to address these issues.`;
-    } else if (prompt.toLowerCase().includes('trend') || prompt.toLowerCase().includes('pattern')) {
-      responseText = `Analysis reveals several key patterns:\n\n1. Delivery volume peaks on Fridays and weekends\n2. Weather significantly impacts delivery times during winter months\n3. Average delivery time increases by 12% during rush hours (8-9am and 5-6pm)\n4. Customer satisfaction is highest for morning deliveries\n5. Areas with difficult parking have 15% higher delivery failure rates`;
-    } else {
-      responseText = `Based on the analysis of your ${dataSize} delivery records, I can see that your operation is performing well in the Dublin area. The average delivery success rate is 94.2%, with most deliveries completed in under 30 minutes. Your drivers are maintaining a solid average rating of 4.3/5 from customers.\n\nTo further improve performance, consider optimizing routes during peak traffic hours and focusing training on the bottom 20% of performers. You might also want to explore expanding coverage in the northern suburbs where demand appears to be growing.`;
+
+    if (!isReady) {
+      toast({
+        title: 'API OpenAI não configurada',
+        description: 'Configure sua chave da API OpenAI nas configurações para usar esta funcionalidade.',
+        variant: 'destructive',
+      });
+      return;
     }
+
+    // Create context from delivery data
+    const context = deliveryData ? `
+      Dados de entrega disponíveis: ${deliveryData.length} registros
+      ${deliveryData.length > 0 ? `
+      Exemplo de dados: ${JSON.stringify(deliveryData.slice(0, 3), null, 2)}
+      ` : ''}
+    ` : 'Nenhum dado de entrega disponível';
+
+    const aiResponse = await chatWithAI(prompt, context);
     
-    setResponse(responseText);
+    if (aiResponse) {
+      setResponse(aiResponse.message);
+      setPrompt(''); // Clear the input after successful response
+    }
   };
+
+  const handleGetAutomaticInsights = async () => {
+    if (!isReady) {
+      toast({
+        title: 'API OpenAI não configurada',
+        description: 'Configure sua chave da API OpenAI nas configurações.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!deliveryData || deliveryData.length === 0) {
+      toast({
+        title: 'Sem dados disponíveis',
+        description: 'Importe dados de entrega primeiro para obter insights.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Calculate basic metrics for AI analysis
+    const completedDeliveries = deliveryData.filter(d => d.status === 'completed' || d.delivered).length;
+    const totalDeliveries = deliveryData.length;
+    const successRate = (completedDeliveries / totalDeliveries) * 100;
+    
+    // Get common issues (this could be enhanced with real data analysis)
+    const commonIssues = ['Endereço não encontrado', 'Cliente ausente', 'Trânsito intenso'];
+
+    const insights = await getDeliveryInsights({
+      completedDeliveries: completedDeliveries,
+      averageTime: 25, // Could be calculated from real data
+      successRate: successRate,
+      commonIssues: commonIssues
+    });
+
+    if (insights) {
+      const insightText = `
+## Análise Automática de Performance
+
+**Eficiência Geral:** ${insights.efficiency}/100
+
+### Recomendações:
+${insights.recommendations.map(rec => `• ${rec}`).join('\n')}
+
+### Fatores de Risco Identificados:
+${insights.riskFactors.map(risk => `• ${risk}`).join('\n')}
+
+### Melhores Horários para Entregas:
+${insights.bestTimeSlots.map(slot => `• ${slot}`).join('\n')}
+      `;
+      setResponse(insightText);
+    }
+  };
+
+  const suggestedQuestions = [
+    "Como posso otimizar minhas rotas de entrega?",
+    "Quais são os principais gargalos na operação?",
+    "Como melhorar a satisfação dos clientes?",
+    "Quais padrões você identifica nos dados?"
+  ];
   
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle>AI Insights</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Brain className="h-5 w-5" />
+            <CardTitle>AI Insights</CardTitle>
+            {isReady ? (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                Conectado
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                Desconectado
+              </Badge>
+            )}
+          </div>
+          {!isReady && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => navigate('/settings')}
+              className="flex items-center gap-1"
+            >
+              <Settings className="h-3 w-3" />
+              Configurar
+            </Button>
+          )}
+        </div>
         <CardDescription>
-          Ask questions about your delivery data to get AI-powered insights
+          Faça perguntas sobre seus dados de entrega para obter insights com IA
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
         <div className="space-y-4">
-          <div>
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+              <Button size="sm" variant="outline" onClick={clearError} className="ml-2">
+                Fechar
+              </Button>
+            </Alert>
+          )}
+
+          {!isReady && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Configure sua chave da API OpenAI nas configurações para usar a funcionalidade de IA.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
             <Textarea
-              placeholder="What insights can you give me about driver performance? How can I optimize my delivery operations?"
+              placeholder="Que insights você pode me dar sobre a performance dos entregadores? Como posso otimizar minhas operações de entrega?"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               className="min-h-[100px]"
+              disabled={!isReady}
             />
+            
+            {/* Suggested questions */}
+            {!response && (
+              <div className="flex flex-wrap gap-2">
+                {suggestedQuestions.map((question, index) => (
+                  <Button
+                    key={index}
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPrompt(question)}
+                    disabled={!isReady}
+                    className="text-xs"
+                  >
+                    {question}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
           
           {response && (
-            <div className="rounded-md bg-secondary/30 p-4">
-              <p className="text-sm whitespace-pre-line">{response}</p>
+            <div className="rounded-md bg-secondary/30 p-4 max-h-64 overflow-y-auto">
+              <pre className="text-sm whitespace-pre-wrap font-sans">{response}</pre>
             </div>
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end">
+      <CardFooter className="flex gap-2">
         <Button 
           onClick={handleSubmit}
-          disabled={isLoading}
+          disabled={isLoading || !isReady || !prompt.trim()}
+          className="flex-1"
         >
-          {isLoading ? 'Processing...' : 'Get Insights'}
+          {isLoading ? 'Processando...' : 'Obter Insights'}
+        </Button>
+        <Button 
+          onClick={handleGetAutomaticInsights}
+          disabled={isLoading || !isReady}
+          variant="outline"
+        >
+          {isLoading ? 'Analisando...' : 'Análise Automática'}
         </Button>
       </CardFooter>
     </Card>

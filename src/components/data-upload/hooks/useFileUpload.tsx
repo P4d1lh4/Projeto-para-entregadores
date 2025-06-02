@@ -1,12 +1,12 @@
 
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { parseFoxDeliveryFile } from '@/utils/excel-parser';
-import { uploadDeliveryData } from '@/services/deliveryService';
-import type { FoxDelivery } from '@/types/delivery';
+import { parseFile, formatDeliveryData } from '@/lib/file-utils';
+import { dataService } from '@/features/deliveries/services/dataService';
+import type { DeliveryData } from '@/features/deliveries/types';
 
 type UseFileUploadResult = {
-  parsedData: FoxDelivery[];
+  parsedData: DeliveryData[];
   isProcessing: boolean;
   isUploading: boolean;
   uploadProgress: number;
@@ -19,9 +19,9 @@ type UseFileUploadResult = {
 };
 
 export const useFileUpload = (
-  onDataUploaded?: (data: FoxDelivery[]) => void
+  onDataUploaded?: (data: DeliveryData[]) => void
 ): UseFileUploadResult => {
-  const [parsedData, setParsedData] = useState<FoxDelivery[]>([]);
+  const [parsedData, setParsedData] = useState<DeliveryData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -46,7 +46,8 @@ export const useFileUpload = (
     
     try {
       // Parse the file
-      const deliveryData = await parseFoxDeliveryFile(file);
+      const rawData = await parseFile(file);
+      const deliveryData = formatDeliveryData(rawData);
       
       if (deliveryData.length === 0) {
         toast({
@@ -102,8 +103,12 @@ export const useFileUpload = (
         setUploadProgress(prev => Math.min(prev + 5, 90));
       }, 300);
       
-      // Upload to Supabase
-      const result = await uploadDeliveryData(parsedData);
+      // Update data service
+      await dataService.updateDeliveryData(parsedData);
+      const result = { success: true, count: parsedData.length };
+      
+      // Clear parsed data after successful upload
+      setParsedData([]);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -120,7 +125,7 @@ export const useFileUpload = (
       } else {
         toast({
           title: 'Upload failed',
-          description: result.error || 'An unknown error occurred',
+          description: 'An unknown error occurred',
           variant: 'destructive',
         });
       }

@@ -1,13 +1,14 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw, DownloadCloud } from 'lucide-react';
+import { RefreshCcw, DownloadCloud, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type DataImportHeaderProps = {
   isLoading: boolean;
   onRefresh: () => void;
+  onClearData?: () => void;
   recordCount?: number;
   dataQuality?: {
     complete: number;
@@ -19,6 +20,7 @@ type DataImportHeaderProps = {
 const DataImportHeader: React.FC<DataImportHeaderProps> = ({
   isLoading,
   onRefresh,
+  onClearData,
   recordCount = 0,
   dataQuality
 }) => {
@@ -94,6 +96,18 @@ const DataImportHeader: React.FC<DataImportHeaderProps> = ({
             <DownloadCloud className="h-4 w-4 mr-2" />
             Export
           </Button>
+          
+          {onClearData && recordCount > 0 && (
+            <Button
+              onClick={onClearData}
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Clear Data
+            </Button>
+          )}
         </div>
       </div>
     </div>

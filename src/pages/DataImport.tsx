@@ -1,14 +1,13 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
-import { fetchDeliveryData } from '@/services/deliveryService';
+import React, { useState, useMemo } from 'react';
+import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
 import { useToast } from '@/hooks/use-toast';
-import { FoxDelivery } from '@/types/delivery';
+import { dataService } from '@/features/deliveries/services/dataService';
+import type { DeliveryData } from '@/features/deliveries/types';
 import DataImportHeader from '@/components/data-import/DataImportHeader';
 import TabsContainer from '@/components/data-import/TabsContainer';
 
 const DataImport: React.FC = () => {
-  const [deliveries, setDeliveries] = useState<FoxDelivery[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { deliveryData: deliveries, loading: isLoading, error, refetch } = useDeliveryData();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(10);
   const { toast } = useToast();
@@ -20,10 +19,10 @@ const DataImport: React.FC = () => {
     }
     
     // Count records with all critical fields filled
-    const criticalFields = ['job_id', 'customer_name', 'delivery_address', 'status'];
+    const criticalFields = ['id', 'customerName', 'address', 'status'];
     
     const complete = deliveries.filter(delivery => 
-      criticalFields.every(field => delivery[field as keyof FoxDelivery])
+      criticalFields.every(field => delivery[field as keyof DeliveryData])
     ).length;
     
     return {
@@ -33,85 +32,64 @@ const DataImport: React.FC = () => {
     };
   }, [deliveries]);
   
-  const loadData = async () => {
-    setIsLoading(true);
+  const handleRefresh = async () => {
     try {
-      const { data, error } = await fetchDeliveryData();
-      
-      if (error) {
-        toast({
-          title: 'Error',
-          description: `Failed to load delivery data: ${error}`,
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (data) {
-        // Process the data to ensure consistency
-        const processedData = processImportedData(data);
-        setDeliveries(processedData);
-        
-        if (deliveries.length > 0) {
-          // Only show toast if explicitly refreshing
-          toast({
-            title: 'Data refreshed',
-            description: `Loaded ${processedData.length} delivery records`,
-          });
-        } else if (processedData.length > 0) {
-          // First load with data
-          toast({
-            title: 'Data loaded',
-            description: `Found ${processedData.length} delivery records (${dataStats.complete} complete)`,
-          });
-        }
-      }
+      await refetch();
+      toast({
+        title: 'Data refreshed',
+        description: `Loaded ${deliveries.length} delivery records`,
+      });
     } catch (error) {
-      console.error('Error loading data:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load delivery data',
+        description: 'Failed to refresh data',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    try {
+      dataService.clearData();
+      await refetch();
+      toast({
+        title: 'Data cleared',
+        description: 'All delivery data has been removed',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to clear data',
+        variant: 'destructive',
+      });
     }
   };
   
-  // Process imported data for consistency
-  const processImportedData = (data: FoxDelivery[]): FoxDelivery[] => {
-    return data.map(delivery => {
-      // Ensure all records have a status
-      if (!delivery.status) {
-        if (delivery.delivered_at) delivery.status = 'delivered';
-        else if (delivery.canceled_at) delivery.status = 'canceled';
-        else if (delivery.collected_at) delivery.status = 'in_transit';
-        else if (delivery.accepted_at) delivery.status = 'accepted';
-        else delivery.status = 'pending';
-      }
+  const handleDataUploaded = async (data: DeliveryData[]) => {
+    try {
+      // The data will be handled by the dataService
+      await refetch();
+      setCurrentPage(1);
       
-      return delivery;
-    });
-  };
-  
-  useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  
-  const handleDataUploaded = (data: FoxDelivery[]) => {
-    // After successful upload, refresh the data
-    loadData();
-    
-    // Set to first page after upload
-    setCurrentPage(1);
+      toast({
+        title: 'Data uploaded',
+        description: `Successfully uploaded ${data.length} records`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to upload data',
+        variant: 'destructive',
+      });
+    }
   };
   
   return (
     <div className="container mx-auto p-4 py-6 space-y-6 max-w-7xl">
       <DataImportHeader 
         isLoading={isLoading} 
-        onRefresh={loadData} 
+        onRefresh={handleRefresh} 
+        onClearData={handleClearData}
         recordCount={deliveries.length}
         dataQuality={dataStats}
       />
@@ -128,4 +106,4 @@ const DataImport: React.FC = () => {
   );
 };
 
-export default DataImport;
+export default DataImport; 

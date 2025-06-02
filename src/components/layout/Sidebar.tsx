@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -13,7 +12,10 @@ import {
   Map as MapIcon, 
   Settings, 
   FileUp, 
-  BarChart2
+  BarChart2,
+  Activity,
+  Bot,
+  Globe
 } from 'lucide-react';
 
 type SidebarProps = {
@@ -60,12 +62,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         </NavLink>
         
         <NavLink 
-          to="/map" 
+          to="/delivery-analysis" 
           className={({ isActive }) => cn(navLinkClasses, isActive && activeNavLinkClasses)}
         >
-          <MapIcon size={20} />
+          <Globe size={20} />
           <span className={cn("transition-opacity", isOpen ? "opacity-100" : "opacity-0", "whitespace-nowrap")}>
-            Map
+            Análise Geográfica
           </span>
         </NavLink>
         
@@ -96,6 +98,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           <Users size={20} />
           <span className={cn("transition-opacity", isOpen ? "opacity-100" : "opacity-0", "whitespace-nowrap")}>
             Customers
+          </span>
+        </NavLink>
+        
+        <NavLink 
+          to="/ai-assistant" 
+          className={({ isActive }) => cn(navLinkClasses, isActive && activeNavLinkClasses)}
+        >
+          <Bot size={20} />
+          <span className={cn("transition-opacity", isOpen ? "opacity-100" : "opacity-0", "whitespace-nowrap")}>
+            AI Assistant
           </span>
         </NavLink>
         

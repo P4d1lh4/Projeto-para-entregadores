@@ -67,22 +67,22 @@ class OpenAIService {
 
     try {
       const prompt = `
-        Você é um especialista em otimização de rotas de entrega. Analise as seguintes entregas e otimize a rota:
+        You are a delivery route optimization expert. Analyze the following deliveries and optimize the route:
 
-        Ponto de partida: ${startLocation}
+        Starting point: ${startLocation}
         
-        Entregas:
+        Deliveries:
         ${deliveries.map((delivery, index) => 
-          `${index + 1}. Endereço: ${delivery.address}, Prioridade: ${delivery.priority}/10${delivery.timeWindow ? `, Janela de tempo: ${delivery.timeWindow}` : ''}`
+          `${index + 1}. Address: ${delivery.address}, Priority: ${delivery.priority}/10${delivery.timeWindow ? `, Time window: ${delivery.timeWindow}` : ''}`
         ).join('\n')}
 
-        Por favor, forneça:
-        1. Uma rota otimizada (ordem dos endereços)
-        2. Tempo estimado total
-        3. Distância estimada
-        4. Sugestões para melhorar a eficiência
+        Please provide:
+        1. An optimized route (order of addresses)
+        2. Estimated total time
+        3. Estimated distance
+        4. Suggestions to improve efficiency
 
-        Responda em formato JSON com as chaves: optimizedRoute, estimatedTime, estimatedDistance, suggestions.
+        Respond in JSON format with keys: optimizedRoute, estimatedTime, estimatedDistance, suggestions.
       `;
 
       const completion = await this.openai!.chat.completions.create({
@@ -129,21 +129,21 @@ class OpenAIService {
 
     try {
       const prompt = `
-        Analise os seguintes dados de entrega e forneça insights:
+        Analyze the following delivery data and provide insights:
 
-        Dados:
-        - Entregas completadas: ${deliveryData.completedDeliveries}
-        - Tempo médio por entrega: ${deliveryData.averageTime} minutos
-        - Taxa de sucesso: ${deliveryData.successRate}%
-        - Problemas comuns: ${deliveryData.commonIssues.join(', ')}
+        Data:
+        - Completed deliveries: ${deliveryData.completedDeliveries}
+        - Average time per delivery: ${deliveryData.averageTime} minutes
+        - Success rate: ${deliveryData.successRate}%
+        - Common issues: ${deliveryData.commonIssues.join(', ')}
 
-        Forneça:
-        1. Pontuação de eficiência (0-100)
-        2. Recomendações específicas para melhorar
-        3. Fatores de risco identificados
-        4. Melhores horários para entregas
+        Please provide:
+        1. Efficiency score (0-100)
+        2. Specific recommendations to improve
+        3. Risk factors identified
+        4. Best times for deliveries
 
-        Responda em formato JSON com as chaves: efficiency, recommendations, riskFactors, bestTimeSlots.
+        Respond in JSON format with keys: efficiency, recommendations, riskFactors, bestTimeSlots.
       `;
 
       const completion = await this.openai!.chat.completions.create({
@@ -163,7 +163,7 @@ class OpenAIService {
         return {
           efficiency: 75,
           recommendations: [response],
-          riskFactors: ['Dados insuficientes'],
+          riskFactors: ['Insufficient data'],
           bestTimeSlots: ['09:00-11:00', '14:00-16:00']
         };
       }
@@ -181,10 +181,10 @@ class OpenAIService {
 
     try {
       const systemPrompt = `
-        Você é um assistente especializado em logística e entregas. 
-        Ajude com questões relacionadas a otimização de rotas, gestão de entregas, 
-        produtividade de entregadores e soluções para problemas logísticos.
-        ${context ? `\nContexto adicional: ${context}` : ''}
+        You are an assistant specialized in logistics and deliveries. 
+        Help with questions related to route optimization, delivery management, 
+        driver productivity and solutions for logistic problems.
+        ${context ? `\nAdditional context: ${context}` : ''}
       `;
 
       const completion = await this.openai!.chat.completions.create({
@@ -219,17 +219,17 @@ class OpenAIService {
 
     try {
       const prompt = `
-        Gere um relatório detalhado de entregas baseado nos seguintes dados:
+        Generate a detailed delivery report based on the following data:
         ${JSON.stringify(data, null, 2)}
 
-        O relatório deve incluir:
-        1. Resumo executivo
-        2. Métricas principais
-        3. Análise de desempenho
-        4. Recomendações
-        5. Próximos passos
+        The report should include:
+        1. Executive summary
+        2. Key metrics
+        3. Performance analysis
+        4. Recommendations
+        5. Next steps
 
-        Formato: Markdown
+        Format: Markdown
       `;
 
       const completion = await this.openai!.chat.completions.create({
@@ -238,7 +238,7 @@ class OpenAIService {
         temperature: 0.3,
       });
 
-      return completion.choices[0].message.content || 'Erro ao gerar relatório';
+      return completion.choices[0].message.content || 'Error generating report';
     } catch (error) {
       console.error('Error generating report:', error);
       throw new Error('Failed to generate delivery report');

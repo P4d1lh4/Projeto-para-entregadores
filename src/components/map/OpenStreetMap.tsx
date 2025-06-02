@@ -162,7 +162,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <MapPin className="h-5 w-5" />
-            Mapa Interativo de Entregas
+            Interactive Delivery Map
           </CardTitle>
           <Button
             variant="outline"
@@ -279,8 +279,8 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
                         </span>
                       </div>
                       <div className="space-y-1 text-xs">
-                        <div><strong>Cliente:</strong> {delivery.customerName}</div>
-                        <div><strong>Motorista:</strong> {delivery.driverName}</div>
+                        <div><strong>Customer:</strong> {delivery.customerName}</div>
+                        <div><strong>Driver:</strong> {delivery.driverName}</div>
                         <div><strong>Endereço:</strong> {delivery.address}, {delivery.city}</div>
                         <div>
                           <strong>Data:</strong> {new Date(delivery.deliveryTime).toLocaleString('pt-BR')}
@@ -309,7 +309,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
             🗺️ Powered by OpenStreetMap - Dados geográficos gratuitos e colaborativos
           </p>
           <p>
-            📍 Total de {deliveries.filter(d => d.latitude && d.longitude).length} entregas geocodificadas de {deliveries.length}
+            📍 Total of {deliveries.filter(d => d.latitude && d.longitude).length} geocoded deliveries out of {deliveries.length}
           </p>
           {searchLocation && (
             <p>

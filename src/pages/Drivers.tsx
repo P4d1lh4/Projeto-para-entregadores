@@ -158,7 +158,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Carregando dados dos entregadores...</span>
+          <span>Loading driver data...</span>
         </div>
       </div>
     );
@@ -168,9 +168,9 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Análise de Entregadores</h1>
+        <h1 className="text-3xl font-bold">Driver Analysis</h1>
         <p className="text-muted-foreground">
-          Gerencie e analise o desempenho dos entregadores
+          Manage and analyze driver performance
         </p>
       </div>
 
@@ -227,7 +227,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
             </div>
             
             <div>
-              <Label htmlFor="minDeliveries">Entregas mínimas</Label>
+              <Label htmlFor="minDeliveries">Minimum Deliveries</Label>
               <Input
                 id="minDeliveries"
                 type="number"
@@ -255,7 +255,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total de Entregadores</p>
+                <p className="text-sm text-muted-foreground">Total Drivers</p>
                 <p className="text-2xl font-bold">{filteredDrivers.length}</p>
                 {hasFilters && drivers.length !== filteredDrivers.length && (
                   <p className="text-xs text-blue-600">de {drivers.length}</p>
@@ -306,7 +306,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
       {/* Drivers Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Entregadores</CardTitle>
+          <CardTitle>Driver List</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredDrivers.length > 0 ? (
@@ -315,7 +315,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">Nome</th>
-                    <th className="text-left p-2">Entregas</th>
+                    <th className="text-left p-2">Deliveries</th>
                     <th className="text-left p-2">Avaliação</th>
                     <th className="text-left p-2">Taxa de Sucesso</th>
                     <th className="text-left p-2">Tempo Médio</th>
@@ -359,8 +359,8 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               {hasFilters 
-                ? 'Nenhum entregador encontrado com os filtros aplicados.'
-                : 'Nenhum dados de entregadores disponível.'
+                ? 'No driver found with the applied filters.'
+                : 'No driver data available.'
               }
             </div>
           )}
@@ -373,10 +373,10 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Award className="h-5 w-5 text-blue-600" />
-              Detalhes do Entregador: {selectedDriver?.name}
+              Driver Details: {selectedDriver?.name}
             </DialogTitle>
             <DialogDescription>
-              Estatísticas detalhadas e histórico de entregas
+              Detailed statistics and delivery history
             </DialogDescription>
           </DialogHeader>
 
@@ -396,7 +396,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                       <div className="text-2xl font-bold text-blue-600">
                         {selectedDriver.detailedStats?.totalDeliveries || 0}
                       </div>
-                      <div className="text-sm text-muted-foreground">Total de Entregas</div>
+                      <div className="text-sm text-muted-foreground">Total Deliveries</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-green-600">
@@ -476,10 +476,10 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                     <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Últimos 7 dias</span>
-                        <span className="font-semibold">{selectedDriver.detailedStats?.recentDeliveries || 0} entregas</span>
+                        <span className="font-semibold">{selectedDriver.detailedStats?.recentDeliveries || 0} deliveries</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Clientes únicos</span>
+                        <span className="text-muted-foreground">Unique customers</span>
                         <span className="font-semibold">{selectedDriver.detailedStats?.uniqueCustomers || 0}</span>
                       </div>
                     </div>
@@ -517,7 +517,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <MapPin className="h-5 w-5" />
-                    Últimas 10 Entregas
+                    Last 10 Deliveries
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -555,7 +555,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                       </div>
                     )) || (
                       <div className="text-center text-muted-foreground py-4">
-                        Nenhuma entrega encontrada
+                        No delivery found
                       </div>
                     )}
                   </div>

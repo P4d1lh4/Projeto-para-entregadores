@@ -1,5 +1,5 @@
 // Environment Configuration
-// Este arquivo centraliza todas as variáveis de ambiente da aplicação
+// This file centralizes all environment variables for the application
 
 export const ENV = {
   // OpenAI Configuration

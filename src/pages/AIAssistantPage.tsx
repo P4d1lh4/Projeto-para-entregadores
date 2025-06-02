@@ -7,7 +7,7 @@ const AIAssistantPage: React.FC = () => {
       <div>
         <h1 className="text-3xl font-bold">Assistente de IA</h1>
         <p className="text-muted-foreground">
-          Assistente inteligente especializado em logística e otimização de entregas
+          Intelligent assistant specialized in logistics and delivery optimization
         </p>
       </div>
       
@@ -31,14 +31,14 @@ const AIAssistantPage: React.FC = () => {
               </div>
               <div>
                 <strong>Análise de Performance:</strong>
-                <p className="text-muted-foreground">
-                  Use "Insights" para análise detalhada da performance de entregas
+                <p className="text-sm text-muted-foreground mb-4">
+                  Use "Insights" for detailed delivery performance analysis
                 </p>
               </div>
               <div>
                 <strong>Relatórios:</strong>
-                <p className="text-muted-foreground">
-                  Gere relatórios automatizados com análises e recomendações
+                <p className="text-sm text-muted-foreground mb-4">
+                  Generate automated reports with analysis and recommendations
                 </p>
               </div>
             </div>
@@ -52,7 +52,7 @@ const AIAssistantPage: React.FC = () => {
                 "Como posso reduzir o tempo médio de entrega?"
               </div>
               <div className="p-3 bg-muted rounded">
-                "Quais são os horários de pico para entregas?"
+                "What are the peak hours for deliveries?"
               </div>
               <div className="p-3 bg-muted rounded">
                 "Como melhorar a satisfação dos clientes?"

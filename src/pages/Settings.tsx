@@ -45,8 +45,9 @@ const Settings = () => {
     }
     
     toast({
-      title: 'Configurações salvas',
-      description: 'Suas configurações foram salvas com sucesso',
+      title: 'Settings Saved',
+      description: 'Your settings have been saved successfully',
+      variant: 'default',
     });
   };
 
@@ -77,8 +78,10 @@ const Settings = () => {
   
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Configurações</h1>
-      <p className="text-muted-foreground">Configure as configurações da plataforma e chaves de API.</p>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Configure platform settings and API keys.</p>
+      </div>
       
       <div className="grid grid-cols-1 gap-6">
         <Card>
@@ -179,9 +182,9 @@ const Settings = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Configurações Gerais</CardTitle>
+            <CardTitle>General Settings</CardTitle>
             <CardDescription>
-              Configure as configurações gerais da plataforma
+              Configure general platform settings
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -214,7 +217,7 @@ const Settings = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={saveSettings}>Salvar Configurações</Button>
+            <Button onClick={saveSettings}>Save Settings</Button>
           </CardFooter>
         </Card>
 
@@ -231,7 +234,7 @@ const Settings = () => {
               <div className="space-y-2">
                 <h4 className="font-medium">🗺️ Otimização de Rotas</h4>
                 <p className="text-sm text-muted-foreground">
-                  AI analisa entregas e sugere a rota mais eficiente
+                  AI analyzes deliveries and suggests the most efficient route
                 </p>
               </div>
               <div className="space-y-2">
@@ -268,7 +271,7 @@ const Settings = () => {
               <div className="space-y-2">
                 <h4 className="font-medium">🔄 Regenerar Dados</h4>
                 <p className="text-sm text-muted-foreground">
-                  Regenerar os dados mock para simular novas entregas
+                  Regenerate mock data to simulate new deliveries
                 </p>
               </div>
               <div className="space-y-2">

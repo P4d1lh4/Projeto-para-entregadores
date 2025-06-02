@@ -169,8 +169,8 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
     return (
       <Card className={className}>
         <CardHeader>
-          <CardTitle>Análise Avançada de Entregadores</CardTitle>
-          <CardDescription>Selecione entregadores para ver análises detalhadas</CardDescription>
+          <CardTitle>Advanced Driver Analytics</CardTitle>
+          <CardDescription>Select drivers to see detailed analytics</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -181,20 +181,20 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Truck className="h-5 w-5" />
-          Análise Avançada de Entregadores
+          Advanced Driver Analytics
         </CardTitle>
         <CardDescription>
-          Análise detalhada de {driverMetrics.length} entregador{driverMetrics.length !== 1 ? 'es' : ''}
+          Detailed analysis of {driverMetrics.length} driver{driverMetrics.length !== 1 ? 'es' : ''}
         </CardDescription>
       </CardHeader>
       
       <CardContent>
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="efficiency">Eficiência</TabsTrigger>
-            <TabsTrigger value="trends">Tendências</TabsTrigger>
+            <TabsTrigger value="efficiency">Efficiency</TabsTrigger>
+            <TabsTrigger value="trends">Trends</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -204,7 +204,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Total de Entregas</p>
+                        <p className="text-sm text-muted-foreground">Total Deliveries</p>
                         <p className="text-2xl font-bold">{aggregatedMetrics.totalDeliveries}</p>
                       </div>
                       <Target className="h-8 w-8 text-muted-foreground" />
@@ -216,7 +216,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Taxa de Sucesso Média</p>
+                        <p className="text-sm text-muted-foreground">Average Success Rate</p>
                         <p className="text-2xl font-bold">{aggregatedMetrics.avgSuccessRate.toFixed(1)}%</p>
                       </div>
                       <CheckCircle className="h-8 w-8 text-muted-foreground" />
@@ -228,7 +228,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Avaliação Média</p>
+                        <p className="text-sm text-muted-foreground">Average Rating</p>
                         <p className="text-2xl font-bold">{aggregatedMetrics.avgRating.toFixed(1)}</p>
                       </div>
                       <Star className="h-8 w-8 text-muted-foreground" />
@@ -240,7 +240,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Eficiência Média</p>
+                        <p className="text-sm text-muted-foreground">Average Efficiency</p>
                         <p className="text-2xl font-bold">{aggregatedMetrics.avgEfficiency.toFixed(1)}</p>
                       </div>
                       <TrendingUp className="h-8 w-8 text-muted-foreground" />
@@ -259,7 +259,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                         <div>
                           <h3 className="font-medium">{driver.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {driver.totalDeliveries} entregas • {driver.avgTime}min médio
+                            {driver.totalDeliveries} deliveries • {driver.avgTime}min average
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -295,28 +295,28 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
+                        <p className="text-sm text-muted-foreground">Success Rate</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress value={driver.successRate} className="flex-1" />
                           <span className="text-sm font-medium">{driver.successRate.toFixed(1)}%</span>
                         </div>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Cobertura</p>
+                        <p className="text-sm text-muted-foreground">Coverage</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress value={driver.coverage} className="flex-1" />
                           <span className="text-sm font-medium">{driver.coverage.toFixed(0)}%</span>
                         </div>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Consistência</p>
+                        <p className="text-sm text-muted-foreground">Consistency</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress value={driver.consistency} className="flex-1" />
                           <span className="text-sm font-medium">{driver.consistency.toFixed(0)}%</span>
                         </div>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Eficiência</p>
+                        <p className="text-sm text-muted-foreground">Efficiency</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Progress value={Math.min(100, driver.efficiency * 20)} className="flex-1" />
                           <span className="text-sm font-medium">{driver.efficiency.toFixed(1)}</span>
@@ -326,25 +326,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground mb-2">Distribuição por Período</p>
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm">Manhã</span>
-                            <span className="text-sm font-medium">{driver.timeDistribution.morning}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm">Tarde</span>
-                            <span className="text-sm font-medium">{driver.timeDistribution.afternoon}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm">Noite</span>
-                            <span className="text-sm font-medium">{driver.timeDistribution.evening}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-2">Status das Entregas</p>
+                        <p className="text-sm text-muted-foreground mb-2">Delivery Status</p>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-sm">Entregues</span>
@@ -419,21 +401,21 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <p className="text-sm text-muted-foreground">Semana Passada</p>
+                        <p className="text-sm text-muted-foreground">Last Week</p>
                         <p className="text-xl font-bold">{driver.recentPerformance.lastWeek}</p>
-                        <p className="text-xs text-muted-foreground">entregas</p>
+                        <p className="text-xs text-muted-foreground">deliveries</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Esta Semana</p>
+                        <p className="text-sm text-muted-foreground">This Week</p>
                         <p className="text-xl font-bold">{driver.recentPerformance.thisWeek}</p>
-                        <p className="text-xs text-muted-foreground">entregas</p>
+                        <p className="text-xs text-muted-foreground">deliveries</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Variação</p>
+                        <p className="text-sm text-muted-foreground">Variation</p>
                         <p className={`text-xl font-bold ${driver.weeklyTrend > 0 ? 'text-green-600' : driver.weeklyTrend < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                           {driver.weeklyTrend > 0 ? '+' : ''}{driver.weeklyTrend}
                         </p>
-                        <p className="text-xs text-muted-foreground">entregas</p>
+                        <p className="text-xs text-muted-foreground">deliveries</p>
                       </div>
                     </div>
                   </CardContent>

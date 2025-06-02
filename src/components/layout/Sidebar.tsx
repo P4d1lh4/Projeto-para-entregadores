@@ -67,7 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         >
           <Globe size={20} />
           <span className={cn("transition-opacity", isOpen ? "opacity-100" : "opacity-0", "whitespace-nowrap")}>
-            Análise Geográfica
+            Geographic Analysis
           </span>
         </NavLink>
         

@@ -33,7 +33,7 @@ const ChatGptInsights: React.FC<ChatGptInsightsProps> = ({ deliveryData }) => {
     if (!isReady) {
       toast({
         title: 'API OpenAI não configurada',
-        description: 'Configure sua chave da API OpenAI nas configurações para usar esta funcionalidade.',
+        description: 'Configure your OpenAI API key in the settings to use this feature.',
         variant: 'destructive',
       });
       return;
@@ -59,7 +59,7 @@ const ChatGptInsights: React.FC<ChatGptInsightsProps> = ({ deliveryData }) => {
     if (!isReady) {
       toast({
         title: 'API OpenAI não configurada',
-        description: 'Configure sua chave da API OpenAI nas configurações.',
+        description: 'Configure your OpenAI API key in the settings.',
         variant: 'destructive',
       });
       return;
@@ -166,7 +166,7 @@ ${insights.bestTimeSlots.map(slot => `• ${slot}`).join('\n')}
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Configure sua chave da API OpenAI nas configurações para usar a funcionalidade de IA.
+                Configure your OpenAI API key in the settings to use AI functionality.
               </AlertDescription>
             </Alert>
           )}

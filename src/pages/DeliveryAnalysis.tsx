@@ -182,9 +182,9 @@ const DeliveryAnalysis: React.FC = () => {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Análise de Entregas</h1>
+        <h1 className="text-3xl font-bold">Delivery Analysis</h1>
         <p className="text-muted-foreground">
-          Mapa interativo e heat map de rotas para visualização completa das entregas
+          Interactive map and heat map of routes for complete delivery visualization
         </p>
       </div>
 
@@ -193,26 +193,26 @@ const DeliveryAnalysis: React.FC = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="map" className="flex items-center gap-2">
             <MapIcon className="h-4 w-4" />
-            Mapa Interativo
+            Interactive Map
           </TabsTrigger>
           <TabsTrigger value="heatmap" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
-            Heat Map de Rotas
+            Heat Map of Routes
           </TabsTrigger>
         </TabsList>
 
-        {/* Aba 1: Mapa Interativo */}
+        {/* Aba 1: Interactive Map */}
         <TabsContent value="map" className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold">Mapa Interativo</h2>
-              <p className="text-muted-foreground">Visualize todas as localizações de entrega e suas rotas no mapa.</p>
+              <h2 className="text-2xl font-bold">Interactive Map</h2>
+              <p className="text-muted-foreground">Visualize all delivery locations and their routes on the map.</p>
             </div>
             <div className="flex items-center gap-2">
               {/* Active filters counter */}
               {Object.values(filters).filter(Boolean).length > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {Object.values(filters).filter(Boolean).length} filtro(s) ativo(s)
+                  {Object.values(filters).filter(Boolean).length} active filter(s)
                 </Badge>
               )}
               <Button 
@@ -221,7 +221,7 @@ const DeliveryAnalysis: React.FC = () => {
                 className="flex items-center gap-2"
               >
                 <Filter size={16} />
-                {showFilters ? "Ocultar Filtros" : "Mostrar Filtros"}
+                {showFilters ? "Hide Filters" : "Show Filters"}
               </Button>
             </div>
           </div>
@@ -232,10 +232,10 @@ const DeliveryAnalysis: React.FC = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-8">
                   <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Nenhum dado disponível</h3>
+                  <h3 className="text-lg font-semibold mb-2">No data available</h3>
                   <p className="text-muted-foreground">
-                    Não há dados de entrega disponíveis para exibir no mapa. 
-                    Verifique se os dados foram carregados corretamente.
+                    No delivery data is available to display on the map. 
+                    Please ensure that the data has been loaded correctly.
                   </p>
                 </div>
               </CardContent>
@@ -246,26 +246,26 @@ const DeliveryAnalysis: React.FC = () => {
                 <Card className="mb-6">
                   <CardHeader>
                     <div className="flex justify-between items-center">
-                      <CardTitle>Filtros</CardTitle>
+                      <CardTitle>Filters</CardTitle>
                       <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2">
                         <X size={16} className="mr-1" />
-                        Limpar
+                        Clear
                       </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Motorista</label>
+                        <label className="text-sm font-medium">Driver</label>
                         <Select
                           value={filters.driverId || "all"}
                           onValueChange={(value) => handleFilterChange('driverId', value === "all" ? undefined : value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Todos os motoristas" />
+                            <SelectValue placeholder="All drivers" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">Todos os motoristas</SelectItem>
+                            <SelectItem value="all">All drivers</SelectItem>
                             {drivers.map(driver => (
                               <SelectItem key={driver} value={driver}>
                                 {driver}
@@ -276,16 +276,16 @@ const DeliveryAnalysis: React.FC = () => {
                       </div>
                       
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">Cliente</label>
+                        <label className="text-sm font-medium">Customer</label>
                         <Select
                           value={filters.customerId || "all"}
                           onValueChange={(value) => handleFilterChange('customerId', value === "all" ? undefined : value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Todos os clientes" />
+                            <SelectValue placeholder="All customers" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">Todos os clientes</SelectItem>
+                            <SelectItem value="all">All customers</SelectItem>
                             {customers.map(customer => (
                               <SelectItem key={customer} value={customer}>
                                 {customer}
@@ -302,14 +302,14 @@ const DeliveryAnalysis: React.FC = () => {
                           onValueChange={(value) => handleFilterChange('status', value === "all" ? undefined : value)}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Todos os status" />
+                            <SelectValue placeholder="All statuses" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="all">Todos os status</SelectItem>
-                            <SelectItem value="delivered">Entregue</SelectItem>
-                            <SelectItem value="in_transit">Em Trânsito</SelectItem>
-                            <SelectItem value="failed">Falhou</SelectItem>
-                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="all">All statuses</SelectItem>
+                            <SelectItem value="delivered">Delivered</SelectItem>
+                            <SelectItem value="in_transit">In Transit</SelectItem>
+                            <SelectItem value="failed">Failed</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -318,13 +318,13 @@ const DeliveryAnalysis: React.FC = () => {
                 </Card>
               )}
 
-              {/* Estatísticas do Mapa */}
+              {/* Map Statistics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Total Filtrado</p>
+                        <p className="text-sm text-muted-foreground">Total Filtered</p>
                         <p className="text-2xl font-bold">{filteredDeliveryData.length}</p>
                       </div>
                       <MapPin className="h-8 w-8 text-blue-600" />
@@ -336,7 +336,7 @@ const DeliveryAnalysis: React.FC = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Entregues</p>
+                        <p className="text-sm text-muted-foreground">Delivered</p>
                         <p className="text-2xl font-bold">
                           {filteredDeliveryData.filter(d => d.status === 'delivered').length}
                         </p>
@@ -350,7 +350,7 @@ const DeliveryAnalysis: React.FC = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Em Trânsito</p>
+                        <p className="text-sm text-muted-foreground">In Transit</p>
                         <p className="text-2xl font-bold">
                           {filteredDeliveryData.filter(d => d.status === 'in_transit').length}
                         </p>
@@ -364,7 +364,7 @@ const DeliveryAnalysis: React.FC = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Pendentes</p>
+                        <p className="text-sm text-muted-foreground">Pending</p>
                         <p className="text-2xl font-bold">
                           {filteredDeliveryData.filter(d => d.status === 'pending').length}
                         </p>
@@ -375,65 +375,65 @@ const DeliveryAnalysis: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Mapa de Entregas */}
+              {/* Delivery Map */}
               <OpenStreetMap deliveries={filteredDeliveryData} />
             </>
           )}
         </TabsContent>
 
-        {/* Aba 2: Heat Map de Rotas */}
+        {/* Aba 2: Heat Map of Routes */}
         <TabsContent value="heatmap" className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold">Heat Map de Rotas</h2>
+            <h2 className="text-2xl font-bold">Heat Map of Routes</h2>
             <p className="text-muted-foreground">
-              Visualize a densidade das rotas de entrega e identifique áreas de alto tráfego
+              Visualize route delivery density and identify high traffic areas
             </p>
           </div>
 
-          {/* Analytics Cards do Heat Map */}
+          {/* Analytics Cards of Heat Map */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Entregas</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Deliveries</CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalDeliveries.toLocaleString()}</div>
                 <p className="text-xs text-muted-foreground">
-                  {geocodedDeliveries2} geocodificadas
+                  {geocodedDeliveries2} geocoded
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taxa de Geocodificação</CardTitle>
+                <CardTitle className="text-sm font-medium">Geocoding Rate</CardTitle>
                 <MapPin className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{geocodingRate}%</div>
                 <Badge variant={geocodingRate > 80 ? "default" : geocodingRate > 50 ? "secondary" : "destructive"}>
-                  {geocodingRate > 80 ? "Excelente" : geocodingRate > 50 ? "Bom" : "Baixo"}
+                  {geocodingRate > 80 ? "Excellent" : geocodingRate > 50 ? "Good" : "Low"}
                 </Badge>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Entregadores Ativos</CardTitle>
+                <CardTitle className="text-sm font-medium">Active Drivers</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{Object.keys(driverStats).length}</div>
                 <p className="text-xs text-muted-foreground">
-                  {topDrivers[0]?.[0]} lidera com {topDrivers[0]?.[1]} entregas
+                  {topDrivers[0]?.[0]} leads with {topDrivers[0]?.[1]} deliveries
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Eficiência Média</CardTitle>
+                <CardTitle className="text-sm font-medium">Average Efficiency</CardTitle>
                 <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -442,7 +442,7 @@ const DeliveryAnalysis: React.FC = () => {
                     Math.round((foxDeliveries.filter(d => d.status === 'delivered').length / foxDeliveries.length) * 100) : 0}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Taxa de entregas realizadas
+                  Delivery success rate
                 </p>
               </CardContent>
             </Card>
@@ -454,15 +454,15 @@ const DeliveryAnalysis: React.FC = () => {
           {/* Route Density Analysis */}
           <RouteDensityAnalysis deliveries={foxDeliveries} />
 
-          {/* Top Motoristas */}
+          {/* Top Drivers */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Route className="h-5 w-5" />
-                Top Entregadores
+                Top Drivers
               </CardTitle>
               <CardDescription>
-                Entregadores com maior volume de entregas
+                Drivers with highest delivery volume
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -476,7 +476,7 @@ const DeliveryAnalysis: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-medium">{driver}</p>
-                          <p className="text-sm text-muted-foreground">{count} entregas</p>
+                          <p className="text-sm text-muted-foreground">{count} deliveries</p>
                         </div>
                       </div>
                       <Badge variant="secondary">
@@ -485,7 +485,7 @@ const DeliveryAnalysis: React.FC = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
+                  <p className="text-sm text-muted-foreground">No data available</p>
                 )}
               </div>
             </CardContent>

@@ -110,7 +110,7 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Carregando dados dos clientes...</span>
+          <span>Loading customer data...</span>
         </div>
       </div>
     );
@@ -120,9 +120,9 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
     <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Análise de Clientes</h1>
+        <h1 className="text-3xl font-bold">Customer Analysis</h1>
         <p className="text-muted-foreground">
-          Gerencie e analise o comportamento dos clientes
+          Manage and analyze customer behavior
         </p>
       </div>
 
@@ -179,7 +179,7 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
             </div>
             
             <div>
-              <Label htmlFor="minDeliveries">Entregas mínimas</Label>
+              <Label htmlFor="minDeliveries">Minimum Deliveries</Label>
               <Input
                 id="minDeliveries"
                 type="number"
@@ -207,7 +207,7 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total de Clientes</p>
+                <p className="text-sm text-muted-foreground">Total Customers</p>
                 <p className="text-2xl font-bold">{filteredCustomers.length}</p>
                 {hasFilters && customers.length !== filteredCustomers.length && (
                   <p className="text-xs text-blue-600">de {customers.length}</p>
@@ -234,7 +234,7 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Clientes VIP</p>
+                <p className="text-sm text-muted-foreground">VIP Customers</p>
                 <p className="text-2xl font-bold">{stats.vipCustomers}</p>
               </div>
               <Heart className="h-8 w-8 text-purple-600" />
@@ -258,29 +258,29 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
       {/* Customer Segments Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>Segmentação de Clientes</CardTitle>
+          <CardTitle>Customer Segmentation</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">{stats.vipCustomers}</div>
-              <div className="text-sm text-muted-foreground">VIP (20+ entregas, 4.5+ ⭐)</div>
+              <div className="text-sm text-muted-foreground">VIP (20+ deliveries, 4.5+ ⭐)</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{stats.loyalCustomers}</div>
-              <div className="text-sm text-muted-foreground">Fiéis (10+ entregas, 4+ ⭐)</div>
+              <div className="text-sm text-muted-foreground">Loyal (10+ deliveries, 4+ ⭐)</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {filteredCustomers.filter(c => (c.deliveries || 0) >= 10).length - stats.loyalCustomers}
               </div>
-              <div className="text-sm text-muted-foreground">Regulares (10+ entregas)</div>
+              <div className="text-sm text-muted-foreground">Regular (10+ deliveries)</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-600">
                 {filteredCustomers.filter(c => (c.deliveries || 0) >= 5 && (c.deliveries || 0) < 10).length}
               </div>
-              <div className="text-sm text-muted-foreground">Ocasionais (5-9 entregas)</div>
+              <div className="text-sm text-muted-foreground">Occasional (5-9 deliveries)</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-600">{stats.newCustomers}</div>
@@ -293,7 +293,7 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
       {/* Customers Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Clientes</CardTitle>
+          <CardTitle>Customer List</CardTitle>
         </CardHeader>
         <CardContent>
           {filteredCustomers.length > 0 ? (
@@ -303,7 +303,7 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
                   <tr className="border-b">
                     <th className="text-left p-2">Nome</th>
                     <th className="text-left p-2">Endereço</th>
-                    <th className="text-left p-2">Entregas</th>
+                    <th className="text-left p-2">Deliveries</th>
                     <th className="text-left p-2">Avaliação</th>
                     <th className="text-left p-2">Segmento</th>
                   </tr>
@@ -340,8 +340,8 @@ const Customers: React.FC<CustomersProps> = ({ customerData: propCustomerData })
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               {hasFilters 
-                ? 'Nenhum cliente encontrado com os filtros aplicados.'
-                : 'Nenhum dados de clientes disponível.'
+                ? 'No customer found with the applied filters.'
+                : 'No customer data available.'
               }
             </div>
           )}

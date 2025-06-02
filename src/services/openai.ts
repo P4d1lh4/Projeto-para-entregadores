@@ -53,17 +53,17 @@ class OpenAIService {
   // Generate delivery route optimization suggestions
   async optimizeDeliveryRoute(deliveries: any[]): Promise<string> {
     const prompt = `
-      Como especialista em logística de entregas, analise os seguintes dados de entrega e forneça sugestões de otimização de rotas:
+      As a delivery logistics expert, analyze the following delivery data and provide route optimization suggestions:
       
-      Dados: ${JSON.stringify(deliveries.slice(0, 5), null, 2)}
+      Data: ${JSON.stringify(deliveries.slice(0, 5), null, 2)}
       
-      Forneça sugestões práticas para:
-      1. Otimização de rotas
-      2. Redução de tempo de entrega
-      3. Melhoria da eficiência dos motoristas
-      4. Redução de custos operacionais
+      Provide practical suggestions for:
+      1. Route optimization
+      2. Delivery time reduction
+      3. Driver efficiency improvement
+      4. Operational cost reduction
       
-      Resposta em português brasileiro, máximo 300 palavras.
+      Response in English, maximum 300 words.
     `;
 
     const response = await this.makeRequest('/chat/completions', {
@@ -71,7 +71,7 @@ class OpenAIService {
       messages: [
         {
           role: 'system',
-          content: 'Você é um especialista em otimização de rotas de entrega e logística.'
+          content: 'You are a delivery route optimization and logistics expert.'
         },
         {
           role: 'user',
@@ -82,27 +82,27 @@ class OpenAIService {
       temperature: 0.7,
     });
 
-    return response.choices[0]?.message?.content || 'Não foi possível gerar sugestões.';
+    return response.choices[0]?.message?.content || 'Unable to generate suggestions.';
   }
 
   // Analyze driver performance and provide insights
   async analyzeDriverPerformance(driverData: any): Promise<string> {
     const prompt = `
-      Analise o desempenho do seguinte motorista de entrega:
+      Analyze the performance of the following delivery driver:
       
-      Nome: ${driverData.name}
-      Entregas: ${driverData.deliveries}
-      Taxa de Sucesso: ${(driverData.successRate * 100).toFixed(1)}%
-      Tempo Médio: ${driverData.averageTime} minutos
-      Avaliação: ${driverData.rating}/5
+      Name: ${driverData.name}
+      Deliveries: ${driverData.deliveries}
+      Success Rate: ${(driverData.successRate * 100).toFixed(1)}%
+      Average Time: ${driverData.averageTime} minutes
+      Rating: ${driverData.rating}/5
       
-      Forneça uma análise construtiva com:
-      1. Pontos fortes
-      2. Áreas de melhoria
-      3. Recomendações específicas
-      4. Metas realistas
+      Provide constructive analysis with:
+      1. Strengths
+      2. Areas for improvement
+      3. Specific recommendations
+      4. Realistic goals
       
-      Resposta em português brasileiro, tom profissional e motivador.
+      Response in English, professional and motivating tone.
     `;
 
     const response = await this.makeRequest('/chat/completions', {
@@ -110,7 +110,7 @@ class OpenAIService {
       messages: [
         {
           role: 'system',
-          content: 'Você é um consultor de RH especializado em análise de performance de motoristas de entrega.'
+          content: 'You are an HR consultant specialized in delivery driver performance analysis.'
         },
         {
           role: 'user',
@@ -121,27 +121,27 @@ class OpenAIService {
       temperature: 0.6,
     });
 
-    return response.choices[0]?.message?.content || 'Não foi possível gerar análise.';
+    return response.choices[0]?.message?.content || 'Unable to generate analysis.';
   }
 
   // Generate business insights from delivery data
   async generateBusinessInsights(analyticsData: any): Promise<string> {
     const prompt = `
-      Com base nos seguintes dados de analytics de entrega, gere insights de negócio:
+      Based on the following delivery analytics data, generate business insights:
       
-      - Taxa de Sucesso: ${analyticsData.successRate}%
-      - Motoristas Ativos: ${analyticsData.activeDrivers}
-      - Tempo Médio de Entrega: ${analyticsData.averageDeliveryTime}h
-      - Eficiência de Rota: ${analyticsData.routeEfficiency}
-      - Retenção de Clientes: ${analyticsData.customerRetention}%
+      - Success Rate: ${analyticsData.successRate}%
+      - Active Drivers: ${analyticsData.activeDrivers}
+      - Average Delivery Time: ${analyticsData.averageDeliveryTime}h
+      - Route Efficiency: ${analyticsData.routeEfficiency}
+      - Customer Retention: ${analyticsData.customerRetention}%
       
-      Forneça insights estratégicos sobre:
-      1. Performance atual do negócio
-      2. Oportunidades de crescimento
-      3. Riscos identificados
-      4. Ações recomendadas
+      Provide strategic insights about:
+      1. Current business performance
+      2. Growth opportunities
+      3. Identified risks
+      4. Recommended actions
       
-      Resposta em português brasileiro, foco executivo.
+      Response in English, executive focus.
     `;
 
     const response = await this.makeRequest('/chat/completions', {
@@ -149,7 +149,7 @@ class OpenAIService {
       messages: [
         {
           role: 'system',
-          content: 'Você é um consultor de negócios especializado em análise de dados de logística e entrega.'
+          content: 'You are a business consultant specialized in logistics and delivery data analysis.'
         },
         {
           role: 'user',
@@ -160,7 +160,7 @@ class OpenAIService {
       temperature: 0.5,
     });
 
-    return response.choices[0]?.message?.content || 'Não foi possível gerar insights.';
+    return response.choices[0]?.message?.content || 'Unable to generate insights.';
   }
 }
 

@@ -63,7 +63,7 @@ const DeliveryAnalysisPage: React.FC = () => {
           <Info className="h-4 w-4" />
           <AlertDescription>
             <strong>Dados de Demonstração:</strong> Este relatório está usando dados simulados para demonstração. 
-            Para ver análises reais, importe seus dados de delivery no sistema.
+            To see real analysis, import your delivery data into the system.
           </AlertDescription>
         </Alert>
       )}

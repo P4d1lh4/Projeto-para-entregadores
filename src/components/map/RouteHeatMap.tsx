@@ -163,35 +163,35 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Heat Map de Rotas de Entrega
+          Delivery Route Heat Map
         </CardTitle>
         
         {/* Controls */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
-            <Label>Modo do Heat Map</Label>
+            <Label>Heat Map Mode</Label>
             <Select value={heatMapMode} onValueChange={(value: HeatMapMode) => setHeatMapMode(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pickup">Coletas</SelectItem>
-                <SelectItem value="delivery">Entregas</SelectItem>
-                <SelectItem value="both">Ambos</SelectItem>
+                <SelectItem value="pickup">Pickups</SelectItem>
+                <SelectItem value="delivery">Deliveries</SelectItem>
+                <SelectItem value="both">Both</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="space-y-2">
-            <Label>Intensidade</Label>
+            <Label>Intensity</Label>
             <Select value={intensity} onValueChange={(value: HeatMapIntensity) => setIntensity(value)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Baixa</SelectItem>
-                <SelectItem value="medium">Média</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -202,7 +202,7 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
               checked={showPoints}
               onCheckedChange={setShowPoints}
             />
-            <Label htmlFor="show-points">Mostrar Pontos</Label>
+            <Label htmlFor="show-points">Show Points</Label>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -211,7 +211,7 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
               checked={showRoutes}
               onCheckedChange={setShowRoutes}
             />
-            <Label htmlFor="show-routes">Mostrar Rotas</Label>
+            <Label htmlFor="show-routes">Show Routes</Label>
           </div>
         </div>
 
@@ -219,23 +219,23 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-sm">
           <div className="text-center">
             <div className="font-bold text-lg">{stats.totalPoints}</div>
-            <div className="text-muted-foreground">Total Pontos</div>
+            <div className="text-muted-foreground">Total Points</div>
           </div>
           <div className="text-center">
             <div className="font-bold text-lg text-purple-600">{stats.pickupPoints}</div>
-            <div className="text-muted-foreground">Coletas</div>
+            <div className="text-muted-foreground">Pickups</div>
           </div>
           <div className="text-center">
             <div className="font-bold text-lg text-cyan-600">{stats.deliveryPoints}</div>
-            <div className="text-muted-foreground">Entregas</div>
+            <div className="text-muted-foreground">Deliveries</div>
           </div>
           <div className="text-center">
             <div className="font-bold text-lg text-blue-600">{stats.routes}</div>
-            <div className="text-muted-foreground">Rotas</div>
+            <div className="text-muted-foreground">Routes</div>
           </div>
           <div className="text-center">
             <div className="font-bold text-lg text-green-600">{stats.uniqueDrivers}</div>
-            <div className="text-muted-foreground">Motoristas</div>
+            <div className="text-muted-foreground">Drivers</div>
           </div>
         </div>
 
@@ -243,15 +243,15 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
         <div className="flex flex-wrap gap-3 text-sm">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-            <span>Coletas</span>
+            <span>Pickups</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-full bg-cyan-500"></div>
-            <span>Entregas</span>
+            <span>Deliveries</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-8 h-1 bg-blue-500"></div>
-            <span>Rotas</span>
+            <span>Routes</span>
           </div>
         </div>
       </CardHeader>
@@ -261,14 +261,14 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Nenhum dado de entrega disponível para exibir o heat map.
+              No delivery data available to display the heat map.
             </AlertDescription>
           </Alert>
         ) : heatMapData.length === 0 ? (
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Nenhuma entrega possui coordenadas válidas para exibir o heat map.
+              No delivery has valid coordinates to display the heat map.
             </AlertDescription>
           </Alert>
         ) : (
@@ -311,10 +311,10 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
                   <Popup>
                     <div className="p-1 text-xs">
                       <div className="font-medium">
-                        {point.type === 'pickup' ? '📦 Coleta' : '🚚 Entrega'}
+                        {point.type === 'pickup' ? '📦 Pickup' : '🚚 Delivery'}
                       </div>
-                      <div><strong>Motorista:</strong> {point.driver}</div>
-                      <div><strong>Endereço:</strong> {point.address}</div>
+                      <div><strong>Driver:</strong> {point.driver}</div>
+                      <div><strong>Address:</strong> {point.address}</div>
                       <div><strong>Status:</strong> {point.status}</div>
                     </div>
                   </Popup>
@@ -330,10 +330,10 @@ export const RouteHeatMap: React.FC<RouteHeatMapProps> = ({ deliveries, classNam
         {/* Footer info */}
         <div className="mt-4 text-sm text-muted-foreground">
           <p>
-            🗺️ Powered by OpenStreetMap - Visualização de densidade de rotas
+            🗺️ Powered by OpenStreetMap - Visualization of route density
           </p>
           <p>
-            📊 Mostrando {stats.totalPoints} pontos de {stats.uniqueDrivers} motoristas diferentes
+            📊 Showing {stats.totalPoints} points from {stats.uniqueDrivers} different drivers
           </p>
         </div>
       </CardContent>

@@ -60,14 +60,14 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ className }) => {
       setMessages([{
         id: '1',
         type: 'assistant',
-        content: 'Olá! Sou seu assistente de IA especializado em logística e entregas. Para começar, você precisa configurar sua chave da API OpenAI nas configurações.',
+        content: 'Hello! I am your AI assistant specialized in logistics and deliveries. To get started, you need to configure your OpenAI API key in the settings.',
         timestamp: new Date()
       }]);
     } else {
       setMessages([{
         id: '1',
         type: 'assistant',
-        content: 'Olá! Sou seu assistente de IA especializado em logística e entregas. Como posso ajudar você hoje?',
+        content: 'Hello! I am your AI assistant specialized in logistics and deliveries. How can I help you today?',
         timestamp: new Date()
       }]);
     }

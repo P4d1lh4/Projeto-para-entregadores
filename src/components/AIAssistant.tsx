@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -104,27 +105,27 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ className }) => {
     if (!isReady) return;
 
     const sampleDeliveries = [
-      { address: 'Rua A, 123', priority: 8, timeWindow: '09:00-11:00' },
-      { address: 'Rua B, 456', priority: 5 },
-      { address: 'Rua C, 789', priority: 9, timeWindow: '14:00-16:00' }
+      { address: 'Street A, 123', priority: 8, timeWindow: '09:00-11:00' },
+      { address: 'Street B, 456', priority: 5 },
+      { address: 'Street C, 789', priority: 9, timeWindow: '14:00-16:00' }
     ];
 
-    const response = await optimizeRoute(sampleDeliveries, 'Centro de Distribuição');
+    const response = await optimizeRoute(sampleDeliveries, 'Distribution Center');
     
     if (response) {
       const message: Message = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: `Rota Otimizada:
+        content: `Optimized Route:
         
-**Ordem de entrega:**
+**Delivery order:**
 ${response.optimizedRoute.map((addr, idx) => `${idx + 1}. ${addr}`).join('\n')}
 
-**Estimativas:**
-- Tempo total: ${response.estimatedTime} minutos
-- Distância: ${response.estimatedDistance} km
+**Estimates:**
+- Total time: ${response.estimatedTime} minutes
+- Distance: ${response.estimatedDistance} km
 
-**Sugestões:**
+**Suggestions:**
 ${response.suggestions.join('\n- ')}`,
         timestamp: new Date()
       };
@@ -139,7 +140,7 @@ ${response.suggestions.join('\n- ')}`,
       completedDeliveries: 150,
       averageTime: 25,
       successRate: 92,
-      commonIssues: ['Endereço não encontrado', 'Cliente ausente', 'Trânsito intenso']
+      commonIssues: ['Address not found', 'Customer absent', 'Heavy traffic']
     };
 
     const response = await getDeliveryInsights(sampleData);
@@ -148,17 +149,17 @@ ${response.suggestions.join('\n- ')}`,
       const message: Message = {
         id: Date.now().toString(),
         type: 'assistant',
-        content: `Análise de Performance:
+        content: `Performance Analysis:
         
-**Eficiência:** ${response.efficiency}/100
+**Efficiency:** ${response.efficiency}/100
 
-**Recomendações:**
+**Recommendations:**
 ${response.recommendations.map(rec => `- ${rec}`).join('\n')}
 
-**Fatores de Risco:**
+**Risk Factors:**
 ${response.riskFactors.map(risk => `- ${risk}`).join('\n')}
 
-**Melhores Horários:**
+**Best Time Slots:**
 ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
         timestamp: new Date()
       };
@@ -170,11 +171,11 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
     if (!isReady) return;
 
     const sampleData = {
-      period: 'Última semana',
+      period: 'Last week',
       totalDeliveries: 450,
       successfulDeliveries: 415,
       averageDeliveryTime: 23,
-      topPerformers: ['João Silva', 'Maria Santos', 'Pedro Costa']
+      topPerformers: ['John Silva', 'Maria Santos', 'Pedro Costa']
     };
 
     const response = await generateReport(sampleData);
@@ -195,9 +196,9 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bot className="h-5 w-5" />
-          Assistente de IA
-          {isReady && <Badge variant="secondary">Conectado</Badge>}
-          {!isReady && <Badge variant="destructive">Desconectado</Badge>}
+          AI Assistant
+          {isReady && <Badge variant="secondary">Connected</Badge>}
+          {!isReady && <Badge variant="destructive">Disconnected</Badge>}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -206,7 +207,7 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
             <Button size="sm" variant="outline" onClick={clearError} className="ml-2">
-              Fechar
+              Close
             </Button>
           </Alert>
         )}
@@ -229,7 +230,7 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
             disabled={!isReady || isLoading}
           >
             <Route className="h-4 w-4 mr-2" />
-            Otimizar Rota
+            Optimize Route
           </Button>
           <Button
             size="sm"
@@ -247,7 +248,7 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
             disabled={!isReady || isLoading}
           >
             <FileText className="h-4 w-4 mr-2" />
-            Relatório
+            Report
           </Button>
         </div>
 
@@ -312,7 +313,7 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
             <Input
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Digite sua mensagem..."
+              placeholder="Type your message..."
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               disabled={!isReady || isLoading}
             />
@@ -331,4 +332,4 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
       </CardContent>
     </Card>
   );
-}; 
+};

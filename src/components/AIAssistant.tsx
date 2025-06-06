@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -104,12 +105,12 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ className }) => {
     if (!isReady) return;
 
     const sampleDeliveries = [
-      { address: 'Rua A, 123', priority: 8, timeWindow: '09:00-11:00' },
-      { address: 'Rua B, 456', priority: 5 },
-      { address: 'Rua C, 789', priority: 9, timeWindow: '14:00-16:00' }
+      { address: 'Street A, 123', priority: 8, timeWindow: '09:00-11:00' },
+      { address: 'Street B, 456', priority: 5 },
+      { address: 'Street C, 789', priority: 9, timeWindow: '14:00-16:00' }
     ];
 
-    const response = await optimizeRoute(sampleDeliveries, 'Centro de Distribuição');
+    const response = await optimizeRoute(sampleDeliveries, 'Distribution Center');
     
     if (response) {
       const message: Message = {
@@ -170,11 +171,11 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
     if (!isReady) return;
 
     const sampleData = {
-      period: 'Última semana',
+      period: 'Last week',
       totalDeliveries: 450,
       successfulDeliveries: 415,
       averageDeliveryTime: 23,
-      topPerformers: ['João Silva', 'Maria Santos', 'Pedro Costa']
+      topPerformers: ['John Silva', 'Maria Santos', 'Pedro Costa']
     };
 
     const response = await generateReport(sampleData);
@@ -331,4 +332,4 @@ ${response.bestTimeSlots.map(slot => `- ${slot}`).join('\n')}`,
       </CardContent>
     </Card>
   );
-}; 
+};

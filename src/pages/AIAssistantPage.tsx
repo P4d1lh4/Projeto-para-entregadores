@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { AIAssistant } from '@/components/AIAssistant';
 
@@ -91,4 +92,4 @@ const AIAssistantPage: React.FC = () => {
   );
 };
 
-export default AIAssistantPage; 
+export default AIAssistantPage;

@@ -9,7 +9,11 @@ export {
   calculateSuccessRate,
   calculateActiveDrivers,
   calculateAverageDeliveryTime,
+  calculateNewDrivers,
+  calculateDeliveryTimeTrend
+} from './utils/calculations';
+
+export {
   formatDeliveryTime,
-  formatNumber,
-  getTrendColor
-} from './utils/calculations'; 
+  formatNumber
+} from './utils/formatters'; 

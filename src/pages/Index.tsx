@@ -4,7 +4,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Dashboard from '@/pages/Dashboard';
 import Drivers from '@/pages/Drivers';
 import Deliveries from '@/pages/Deliveries';
-import Customers from '@/pages/Customers';
+import Companies from '@/pages/Companies';
 import Settings from '@/pages/Settings';
 import DataImport from '@/pages/DataImport';
 import Analytics from '@/pages/Analytics';
@@ -81,7 +81,7 @@ const Index = () => {
         } />
         <Route path="drivers" element={<Drivers driverData={driverData} />} />
         <Route path="deliveries" element={<Deliveries deliveryData={deliveryData} />} />
-        <Route path="customers" element={<Customers customerData={customerData} />} />
+        <Route path="customers" element={<Companies customerData={customerData} />} />
         <Route path="analytics" element={<Analytics deliveryData={deliveryData} driverData={driverData} customerData={customerData} />} />
         <Route path="ai-assistant" element={<AIAssistantPage />} />
         <Route path="data-import" element={<DataImport />} />

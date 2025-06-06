@@ -19,7 +19,6 @@ export interface DriverData {
   deliveries: number;
   successRate: number;
   averageTime: number;
-  rating: number;
 }
 
 export interface CustomerData {

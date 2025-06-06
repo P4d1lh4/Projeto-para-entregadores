@@ -22,9 +22,9 @@ const DeliveryAnalysis: React.FC = () => {
   const { deliveryData, loading } = useDeliveryData();
   const { toast } = useToast();
 
-  // Estados para filtros do mapa
+  // Map filter states
   const [filters, setFilters] = useState<DeliveryFilters>({});
-  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Debug logs
   useEffect(() => {
@@ -35,26 +35,32 @@ const DeliveryAnalysis: React.FC = () => {
     console.log('- showFilters:', showFilters);
   }, [deliveryData, loading, filters, showFilters]);
 
-  // Dados filtrados para o mapa
+  // Filtered data for the map
   const filteredDeliveryData = useMemo(() => {
     try {
-      console.log('Filtering deliveries with filters:', filters);
-      const result = filterDeliveries(deliveryData || [], filters);
-      console.log('Filtered result:', result.length, 'items');
-      return result;
+      if (!deliveryData || deliveryData.length === 0) {
+        console.log('No delivery data available for filtering');
+        return [];
+      }
+      
+      return deliveryData.filter(delivery => {
+        const matchesDriver = !filters.driverId || delivery.driverName === filters.driverId;
+        const matchesCustomer = !filters.customerId || delivery.customerName === filters.customerId;
+        const matchesStatus = !filters.status || delivery.status === filters.status;
+        
+        return matchesDriver && matchesCustomer && matchesStatus;
+      });
     } catch (error) {
       console.error('Error filtering deliveries:', error);
-      return [];
+      return deliveryData || [];
     }
   }, [deliveryData, filters]);
   
-  // Extrair motoristas e clientes únicos para filtros
+  // Extract unique drivers and customers for filters
   const drivers = useMemo(() => {
     try {
       if (!deliveryData || deliveryData.length === 0) return [];
-      const result = Array.from(new Set(deliveryData.map(d => d.driverName).filter(Boolean))).sort();
-      console.log('Drivers extracted:', result.length);
-      return result;
+      return Array.from(new Set(deliveryData.map(d => d.driverName).filter(Boolean)));
     } catch (error) {
       console.error('Error extracting drivers:', error);
       return [];
@@ -64,9 +70,7 @@ const DeliveryAnalysis: React.FC = () => {
   const customers = useMemo(() => {
     try {
       if (!deliveryData || deliveryData.length === 0) return [];
-      const result = Array.from(new Set(deliveryData.map(d => d.customerName).filter(Boolean))).sort();
-      console.log('Customers extracted:', result.length);
-      return result;
+      return Array.from(new Set(deliveryData.map(d => d.customerName).filter(Boolean)));
     } catch (error) {
       console.error('Error extracting customers:', error);
       return [];
@@ -109,7 +113,7 @@ const DeliveryAnalysis: React.FC = () => {
     .sort(([,a], [,b]) => b - a)
     .slice(0, 5);
 
-  // Funções para filtros do mapa
+  // Map filter functions
   const handleFilterChange = (key: keyof DeliveryFilters, value: any) => {
     try {
       setFilters(prev => ({
@@ -119,8 +123,8 @@ const DeliveryAnalysis: React.FC = () => {
     } catch (error) {
       console.error('Error changing filter:', error, { key, value });
       toast({
-        title: 'Erro nos Filtros',
-        description: 'Ocorreu um erro ao aplicar o filtro. Tente novamente.',
+        title: 'Error',
+        description: 'An error occurred while applying the filter. Please try again.',
         variant: 'destructive'
       });
     }
@@ -132,8 +136,8 @@ const DeliveryAnalysis: React.FC = () => {
     } catch (error) {
       console.error('Error clearing filters:', error);
       toast({
-        title: 'Erro',
-        description: 'Ocorreu um erro ao limpar os filtros.',
+        title: 'Error',
+        description: 'An error occurred while clearing filters.',
         variant: 'destructive'
       });
     }
@@ -144,7 +148,7 @@ const DeliveryAnalysis: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Carregando dados de entrega...</span>
+          <span>Loading delivery data...</span>
         </div>
       </div>
     );
@@ -160,16 +164,16 @@ const DeliveryAnalysis: React.FC = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <p className="text-red-600 font-semibold">Erro na renderização</p>
+              <p className="text-red-600 font-semibold">Rendering error</p>
               <p className="text-muted-foreground mt-2">
-                Ocorreu um erro ao exibir esta seção. Verifique o console para mais detalhes.
+                An error occurred while displaying this section. Check the console for more details.
               </p>
               <Button 
                 variant="outline" 
                 className="mt-4"
                 onClick={() => window.location.reload()}
               >
-                Recarregar Página
+                Reload Page
               </Button>
             </div>
           </CardContent>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ const getPageTitle = (pathname: string): string => {
     case '/deliveries':
       return 'Deliveries';
     case '/customers':
-      return 'Customers';
+      return 'Companies';
     case '/settings':
       return 'Settings';
     default:

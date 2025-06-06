@@ -1,6 +1,5 @@
-
 import React, { useRef, useState, useCallback } from 'react';
-import { Loader2, FileSpreadsheet } from 'lucide-react';
+import { Loader2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type UploadAreaProps = {
@@ -53,19 +52,19 @@ const UploadArea: React.FC<UploadAreaProps> = ({ onFileSelected, isProcessing })
       onDrop={handleDrop}
     >
       <div className={`mb-6 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`}>
-        <FileSpreadsheet className="h-16 w-16 mx-auto" />
+        <FileText className="h-16 w-16 mx-auto" />
       </div>
       
       <h3 className="text-lg font-semibold mb-2">
         {isDragging 
-          ? 'Drop your Excel file here' 
-          : 'Import Excel Delivery Data'}
+          ? 'Drop your file here' 
+          : 'Import Delivery Data'}
       </h3>
       
       <p className="mb-6 text-sm text-muted-foreground max-w-md">
         {isDragging 
           ? 'Release to upload your file' 
-          : 'Upload your delivery data from Excel files (.xlsx, .xls) by clicking the button below or dragging files here'}
+          : 'Upload your delivery data from Excel (.xlsx, .xls) or CSV (.csv) files by clicking the button below or dragging files here.'}
       </p>
       
       <Button 
@@ -74,14 +73,14 @@ const UploadArea: React.FC<UploadAreaProps> = ({ onFileSelected, isProcessing })
         size="lg"
         className="mb-4"
       >
-        <FileSpreadsheet className="h-4 w-4 mr-2" />
-        Select Excel File
+        <FileText className="h-4 w-4 mr-2" />
+        Select File
       </Button>
       
       <input
         ref={fileInputRef}
         type="file"
-        accept=".xlsx,.xls"
+        accept=".xlsx,.xls,.csv"
         className="hidden"
         onChange={handleFileChange}
         disabled={isProcessing}
@@ -94,7 +93,7 @@ const UploadArea: React.FC<UploadAreaProps> = ({ onFileSelected, isProcessing })
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Supported formats: Excel (.xlsx, .xls)
+          Supported formats: .xlsx, .xls, .csv
         </p>
       )}
     </div>

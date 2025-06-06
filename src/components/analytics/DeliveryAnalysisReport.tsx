@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +13,44 @@ import SmartAlerts from './SmartAlerts';
 import RealTimePerformanceDashboard from './RealTimePerformanceDashboard';
 import RouteOptimizationAnalysis from './RouteOptimizationAnalysis';
 import AdvancedFilters, { type DeliveryFilters } from './AdvancedFilters';
+import { calculateActiveDrivers } from '@/features/dashboard/utils/calculations';
+
+// This helper must be consistent with file-utils and calculations
+const extractDriverIdentifier = (delivery: any): string | null => {
+  // Priority list of fields to check for driver identification
+  const driverFields = [
+    'collecting_driver', // Priority 1: Collecting Driver from CSV
+    'delivering_driver', // Priority 2: Delivering Driver from CSV  
+    'driverId',
+    'driver_id',
+    'courier',
+    'driver',
+    'driverName',
+    'collecting_driver_id',
+    'delivering_driver_id'
+  ];
+
+  for (const field of driverFields) {
+    const value = delivery[field];
+    if (value) {
+      const strValue = String(value).trim().toLowerCase();
+      if (strValue && strValue !== 'null' && strValue !== 'undefined') {
+        return strValue;
+      }
+    }
+  }
+  
+  // If no specific driver field found, try to extract from job_id or other composite fields
+  if (delivery.job_id) {
+    const jobId = String(delivery.job_id).toLowerCase();
+    const driverIdMatch = jobId.match(/(?:driver|drv|courier)[_-]?(\w+)/i);
+    if (driverIdMatch) {
+      return `driver_${driverIdMatch[1]}`.toLowerCase();
+    }
+  }
+
+  return null;
+};
 
 interface DeliveryAnalysisReportProps {
   deliveries: FoxDelivery[];
@@ -147,11 +184,19 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
       .slice(0, 5);
     
     // 2. Driver Analysis
+    const totalActiveDrivers = calculateActiveDrivers(filteredDeliveries);
+    
     const driverStats = filteredDeliveries.reduce((acc, d) => {
-      const driver = d.delivering_driver || d.collecting_driver || 'Unknown';
-      if (!acc[driver]) {
-        acc[driver] = {
-          name: driver,
+      const driverIdentifier = extractDriverIdentifier(d);
+      const driverKey = driverIdentifier || 'Unknown';
+
+      // Use a more descriptive name for display if available
+      const displayName = d.delivering_driver || d.collecting_driver || (d as any).driver_name || (d as any).driverName || driverKey;
+
+      if (!acc[driverKey]) {
+        acc[driverKey] = {
+          id: driverKey,
+          name: displayName,
           totalDeliveries: 0,
           successfulDeliveries: 0,
           totalDuration: 0,
@@ -160,15 +205,15 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
         };
       }
       
-      acc[driver].totalDeliveries++;
-      if (d.status === 'delivered') acc[driver].successfulDeliveries++;
-      if (d.cost) acc[driver].totalRevenue += d.cost;
+      acc[driverKey].totalDeliveries++;
+      if (d.status === 'delivered') acc[driverKey].successfulDeliveries++;
+      if (d.cost) acc[driverKey].totalRevenue += d.cost;
       
       if (d.collected_at && d.delivered_at) {
         const duration = differenceInMinutes(parseISO(d.delivered_at), parseISO(d.collected_at));
         if (duration > 0) {
-          acc[driver].totalDuration += duration;
-          acc[driver].deliveriesWithDuration++;
+          acc[driverKey].totalDuration += duration;
+          acc[driverKey].deliveriesWithDuration++;
         }
       }
       
@@ -248,10 +293,10 @@ const DeliveryAnalysisReport: React.FC<DeliveryAnalysisReportProps> = ({ deliver
         avgOrderValue
       },
       drivers: {
-        totalActiveDrivers: driverMetrics.length,
+        totalActiveDrivers,
         topPerformers,
         strugglingDrivers,
-        avgDeliveriesPerDriver: driverMetrics.length > 0 ? Math.round(totalDeliveries / driverMetrics.length) : 0
+        avgDeliveriesPerDriver: totalActiveDrivers > 0 ? Math.round(totalDeliveries / totalActiveDrivers) : 0
       },
       customers: {
         totalActiveCustomers: customerMetrics.length,

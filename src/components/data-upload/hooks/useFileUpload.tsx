@@ -1,12 +1,14 @@
-
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parseFile, formatDeliveryData } from '@/lib/file-utils';
+import { parseFoxDeliveryFile } from '@/utils/excel-parser';
 import { dataService } from '@/features/deliveries/services/dataService';
 import type { DeliveryData } from '@/features/deliveries/types';
+import type { FoxDelivery } from '@/types/delivery';
 
 type UseFileUploadResult = {
   parsedData: DeliveryData[];
+  foxData: FoxDelivery[]; // Original XLSX data for debugging
   isProcessing: boolean;
   isUploading: boolean;
   uploadProgress: number;
@@ -22,6 +24,7 @@ export const useFileUpload = (
   onDataUploaded?: (data: DeliveryData[]) => void
 ): UseFileUploadResult => {
   const [parsedData, setParsedData] = useState<DeliveryData[]>([]);
+  const [foxData, setFoxData] = useState<FoxDelivery[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -32,10 +35,10 @@ export const useFileUpload = (
   const handleFile = useCallback(async (file: File) => {
     // Check file extension
     const fileExt = file.name.split('.').pop()?.toLowerCase();
-    if (!fileExt || !['xlsx', 'xls'].includes(fileExt)) {
+    if (!fileExt || !['xlsx', 'xls', 'csv'].includes(fileExt)) {
       toast({
         title: 'Invalid file format',
-        description: 'Please upload an Excel file (.xlsx or .xls)',
+        description: 'Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.',
         variant: 'destructive',
       });
       return;
@@ -43,37 +46,75 @@ export const useFileUpload = (
     
     setIsProcessing(true);
     setParsedData([]);
+    setFoxData([]);
     
     try {
-      // Parse the file
-      const rawData = await parseFile(file);
-      const deliveryData = formatDeliveryData(rawData);
-      
-      if (deliveryData.length === 0) {
+      // For XLSX files, use the specialized Fox parser to get company info
+      if (fileExt === 'xlsx' || fileExt === 'xls') {
+        console.log('📊 Processing XLSX file with company information...');
+        
+        // Parse using the Fox delivery parser to preserve company data
+        const foxData = await parseFoxDeliveryFile(file);
+        
+        if (foxData.length === 0) {
+          toast({
+            title: 'No data found',
+            description: 'The file appears to be empty or in an incorrect format',
+            variant: 'destructive',
+          });
+          setIsProcessing(false);
+          return;
+        }
+        
+        // Store the fox data for debugging
+        setFoxData(foxData);
+        
+        // Store the fox data directly in the data service for company processing
+        await dataService.updateFromFoxData(foxData);
+        
+        // For XLSX with company data, we'll skip the preview and go directly to success
+        setParsedData([]); // Empty for XLSX since we processed it directly
+        setCurrentPage(1);
+        
         toast({
-          title: 'No data found',
-          description: 'The file appears to be empty or in an incorrect format',
-          variant: 'destructive',
+          title: 'XLSX file processed successfully',
+          description: `Found ${foxData.length} delivery records with company information`,
         });
-        setIsProcessing(false);
-        return;
+        
+        // Log company information found
+        const companiesFound = [...new Set(foxData.map(d => d.company_name).filter(Boolean))];
+        console.log(`🏢 Found companies: ${companiesFound.join(', ')}`);
+        
+        // Trigger the callback immediately for XLSX files
+        if (onDataUploaded) {
+          onDataUploaded([]);
+        }
+        
+      } else {
+        // For CSV files, use the regular parser
+        console.log('📄 Processing CSV file...');
+        const rawData = await parseFile(file);
+        const deliveryData = formatDeliveryData(rawData);
+        
+        if (deliveryData.length === 0) {
+          toast({
+            title: 'No data found',
+            description: 'The file appears to be empty or in an incorrect format',
+            variant: 'destructive',
+          });
+          setIsProcessing(false);
+          return;
+        }
+        
+        setParsedData(deliveryData);
+        setCurrentPage(1);
+        
+        toast({
+          title: 'CSV file parsed successfully',
+          description: `Found ${deliveryData.length} delivery records`,
+        });
       }
       
-      // Log a summary of what we found
-      console.log(`Found ${deliveryData.length} records with the following fields:`);
-      const sampleRecord = deliveryData[0];
-      const populatedFields = Object.entries(sampleRecord)
-        .filter(([_, value]) => value !== undefined && value !== null && value !== '')
-        .map(([key]) => key);
-      console.log('Populated fields:', populatedFields);
-      
-      setParsedData(deliveryData);
-      setCurrentPage(1);
-      
-      toast({
-        title: 'File parsed successfully',
-        description: `Found ${deliveryData.length} delivery records`,
-      });
     } catch (error) {
       console.error('Error processing file:', error);
       toast({
@@ -84,15 +125,23 @@ export const useFileUpload = (
     } finally {
       setIsProcessing(false);
     }
-  }, [toast]);
+  }, [toast, onDataUploaded]);
 
   const handleClear = useCallback(() => {
     setParsedData([]);
+    setFoxData([]);
     setUploadProgress(0);
   }, []);
 
   const handleUpload = useCallback(async () => {
-    if (parsedData.length === 0) return;
+    if (parsedData.length === 0) {
+      // For XLSX files that were processed directly, show success message
+      toast({
+        title: 'Data already loaded',
+        description: 'XLSX file data has been processed and loaded into the system',
+      });
+      return;
+    }
     
     setIsUploading(true);
     setUploadProgress(10); // Initial progress indication
@@ -103,7 +152,7 @@ export const useFileUpload = (
         setUploadProgress(prev => Math.min(prev + 5, 90));
       }, 300);
       
-      // Update data service
+      // Update data service (for CSV files)
       await dataService.updateDeliveryData(parsedData);
       const result = { success: true, count: parsedData.length };
       
@@ -144,6 +193,7 @@ export const useFileUpload = (
 
   return {
     parsedData,
+    foxData,
     isProcessing,
     isUploading,
     uploadProgress,

@@ -3,7 +3,7 @@
 
 export const ENV = {
   // OpenAI Configuration
-  OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY || '',
+  OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY || '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',
   
   // Application Configuration
   APP_NAME: import.meta.env.VITE_APP_NAME || 'Fox Route Whisperer',

@@ -98,13 +98,13 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
   const [searchLocation, setSearchLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [showSearch, setShowSearch] = useState(false);
 
-  // Get status label in Portuguese
+  // Get status label in English
   const getStatusLabel = (status: string): string => {
     switch (status) {
-      case 'delivered': return 'Entregue';
-      case 'pending': return 'Pendente';
-      case 'in_transit': return 'Em Trânsito';
-      case 'failed': return 'Falhou';
+      case 'delivered': return 'Delivered';
+      case 'pending': return 'Pending';
+      case 'in_transit': return 'In Transit';
+      case 'failed': return 'Failed';
       default: return status;
     }
   };
@@ -171,7 +171,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
             className="flex items-center gap-2"
           >
             <Search className="h-4 w-4" />
-            {showSearch ? 'Ocultar Busca' : 'Buscar Local'}
+            {showSearch ? 'Hide Search' : 'Search Location'}
           </Button>
         </div>
         
@@ -180,7 +180,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
           <div className="mt-4">
             <AddressSearch
               onLocationSelect={handleLocationSelect}
-              placeholder="Buscar endereço em Dublin..."
+              placeholder="Search address in Dublin..."
               className="w-full max-w-md"
             />
           </div>
@@ -281,7 +281,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
                       <div className="space-y-1 text-xs">
                         <div><strong>Customer:</strong> {delivery.customerName}</div>
                         <div><strong>Driver:</strong> {delivery.driverName}</div>
-                        <div><strong>Endereço:</strong> {delivery.address}, {delivery.city}</div>
+                        <div><strong>Address:</strong> {delivery.address}, {delivery.city}</div>
                         <div>
                           <strong>Data:</strong> {new Date(delivery.deliveryTime).toLocaleString('pt-BR')}
                         </div>
@@ -313,7 +313,7 @@ const OpenStreetMap: React.FC<OpenStreetMapProps> = ({
           </p>
           {searchLocation && (
             <p>
-              🎯 Localização pesquisada: {searchLocation.latitude.toFixed(4)}, {searchLocation.longitude.toFixed(4)}
+              🎯 Searched location: {searchLocation.latitude.toFixed(4)}, {searchLocation.longitude.toFixed(4)}
             </p>
           )}
         </div>

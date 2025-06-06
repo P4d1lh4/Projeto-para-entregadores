@@ -8,14 +8,21 @@ import {
   PieChart, 
   Truck, 
   Package, 
-  Users, 
   Map as MapIcon, 
   Settings, 
   FileUp, 
   BarChart2,
   Activity,
   Bot,
-  Globe
+  Globe,
+  Home, 
+  BarChart3, 
+  Building2,
+  MapPin, 
+  Route, 
+  Upload, 
+  HelpCircle,
+  X 
 } from 'lucide-react';
 
 type SidebarProps = {
@@ -95,9 +102,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           to="/customers" 
           className={({ isActive }) => cn(navLinkClasses, isActive && activeNavLinkClasses)}
         >
-          <Users size={20} />
+          <Building2 size={20} />
           <span className={cn("transition-opacity", isOpen ? "opacity-100" : "opacity-0", "whitespace-nowrap")}>
-            Customers
+            Companies
           </span>
         </NavLink>
         

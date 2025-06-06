@@ -54,8 +54,8 @@ const Settings = () => {
   const testOpenAIConnection = async () => {
     if (!openaiApiKey.trim()) {
       toast({
-        title: 'Erro',
-        description: 'Por favor, insira uma chave da API OpenAI',
+        title: 'Error',
+        description: 'Please enter an OpenAI API key',
         variant: 'destructive'
       });
       return;
@@ -64,16 +64,30 @@ const Settings = () => {
     try {
       updateApiKey(openaiApiKey);
       toast({
-        title: 'Conexão testada',
-        description: 'Chave da API OpenAI configurada com sucesso',
+        title: 'Connection tested',
+        description: 'OpenAI API key configured successfully',
       });
     } catch (error) {
       toast({
-        title: 'Erro de conexão',
-        description: 'Falha ao conectar com a API OpenAI. Verifique sua chave.',
+        title: 'Connection error',
+        description: 'Failed to connect to OpenAI API. Check your key.',
         variant: 'destructive'
       });
     }
+  };
+  
+  const regenerateData = () => {
+    toast({
+      title: 'Data regenerated',
+      description: 'Mock data has been successfully regenerated. Reload the page to see the changes.',
+    });
+  };
+
+  const clearData = () => {
+    toast({
+      title: 'Data cleared',
+      description: 'All data has been removed. Reload the page to see the changes.',
+    });
   };
   
   return (
@@ -86,21 +100,21 @@ const Settings = () => {
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Chaves de API</CardTitle>
+            <CardTitle>API Keys</CardTitle>
             <CardDescription>
-              Configure as chaves de API para integração com serviços externos
+              Configure API keys for integration with external services
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="mapbox-key">Chave da API Mapbox</Label>
+              <Label htmlFor="mapbox-key">Mapbox API Key</Label>
               <div className="relative">
                 <Input 
                   id="mapbox-key"
                   type={showMapboxKey ? "text" : "password"}
                   value={mapboxApiKey}
                   onChange={(e) => setMapboxApiKey(e.target.value)}
-                  placeholder="Digite sua chave da API Mapbox"
+                  placeholder="Enter your Mapbox API key"
                   className="pr-10"
                 />
                 <Button
@@ -114,23 +128,23 @@ const Settings = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Necessário para a visualização do mapa
+                Required for map visualization
               </p>
             </div>
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="openai-key">Chave da API OpenAI</Label>
+                <Label htmlFor="openai-key">OpenAI API Key</Label>
                 <div className="flex items-center gap-2">
                   {isReady ? (
                     <Badge variant="secondary" className="flex items-center gap-1">
                       <CheckCircle className="h-3 w-3" />
-                      Conectado
+                      Connected
                     </Badge>
                   ) : (
                     <Badge variant="destructive" className="flex items-center gap-1">
                       <XCircle className="h-3 w-3" />
-                      Desconectado
+                      Disconnected
                     </Badge>
                   )}
                 </div>
@@ -141,7 +155,7 @@ const Settings = () => {
                   type={showOpenAIKey ? "text" : "password"}
                   value={openaiApiKey}
                   onChange={(e) => setOpenaiApiKey(e.target.value)}
-                  placeholder="Digite sua chave da API OpenAI"
+                  placeholder="Enter your OpenAI API key"
                   className="pr-10"
                 />
                 <Button
@@ -161,11 +175,11 @@ const Settings = () => {
                   onClick={testOpenAIConnection}
                   disabled={!openaiApiKey.trim()}
                 >
-                  Testar Conexão
+                  Test Connection
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Necessário para funcionalidades de IA, otimização de rotas e insights
+                Required for AI functionality, route optimization and insights
               </p>
               {error && (
                 <Alert variant="destructive">
@@ -176,7 +190,7 @@ const Settings = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={saveSettings}>Salvar Chaves de API</Button>
+            <Button onClick={saveSettings}>Save API Keys</Button>
           </CardFooter>
         </Card>
         
@@ -190,9 +204,9 @@ const Settings = () => {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="notifications">Notificações</Label>
+                <Label htmlFor="notifications">Notifications</Label>
                 <p className="text-xs text-muted-foreground">
-                  Ativar notificações para atualizações de entrega
+                  Enable notifications for delivery updates
                 </p>
               </div>
               <Switch 
@@ -204,9 +218,9 @@ const Settings = () => {
             
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="auto-refresh">Atualização automática</Label>
+                <Label htmlFor="auto-refresh">Auto refresh</Label>
                 <p className="text-xs text-muted-foreground">
-                  Atualizar dados automaticamente a cada 5 minutos
+                  Automatically update data every 5 minutes
                 </p>
               </div>
               <Switch 
@@ -224,35 +238,35 @@ const Settings = () => {
         {/* AI Features Information */}
         <Card>
           <CardHeader>
-            <CardTitle>Funcionalidades de IA</CardTitle>
+            <CardTitle>AI Features</CardTitle>
             <CardDescription>
-              Recursos disponíveis com a integração OpenAI
+              Available resources with OpenAI integration
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <h4 className="font-medium">🗺️ Otimização de Rotas</h4>
+                <h4 className="font-medium">🗺️ Route Optimization</h4>
                 <p className="text-sm text-muted-foreground">
                   AI analyzes deliveries and suggests the most efficient route
                 </p>
               </div>
               <div className="space-y-2">
-                <h4 className="font-medium">📊 Insights de Performance</h4>
+                <h4 className="font-medium">📊 Performance Insights</h4>
                 <p className="text-sm text-muted-foreground">
-                  Análise inteligente de métricas e recomendações
+                  Intelligent analysis of metrics and recommendations
                 </p>
               </div>
               <div className="space-y-2">
-                <h4 className="font-medium">💬 Assistente Virtual</h4>
+                <h4 className="font-medium">💬 Virtual Assistant</h4>
                 <p className="text-sm text-muted-foreground">
-                  Chat com IA especializada em logística
+                  Chat with AI specialized in logistics
                 </p>
               </div>
               <div className="space-y-2">
-                <h4 className="font-medium">📈 Relatórios Automáticos</h4>
+                <h4 className="font-medium">📈 Automated Reports</h4>
                 <p className="text-sm text-muted-foreground">
-                  Geração automática de relatórios detalhados
+                  Automatic generation of detailed reports
                 </p>
               </div>
             </div>
@@ -261,23 +275,23 @@ const Settings = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Gerenciamento de Dados Mock</CardTitle>
+            <CardTitle>Mock Data Management</CardTitle>
             <CardDescription>
-              Opções para regenerar e limpar os dados mock
+              Options to regenerate and clear mock data
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <h4 className="font-medium">🔄 Regenerar Dados</h4>
+                <h4 className="font-medium">🔄 Regenerate Data</h4>
                 <p className="text-sm text-muted-foreground">
                   Regenerate mock data to simulate new deliveries
                 </p>
               </div>
               <div className="space-y-2">
-                <h4 className="font-medium">🗑️ Limpar Dados</h4>
+                <h4 className="font-medium">🗑️ Clear Data</h4>
                 <p className="text-sm text-muted-foreground">
-                  Limpar todos os dados mock da plataforma
+                  Clear all mock data from the platform
                 </p>
               </div>
             </div>
@@ -288,13 +302,13 @@ const Settings = () => {
                 onClick={() => {
                   dataService.regenerateMockData();
                   toast({
-                    title: 'Dados regenerados',
-                    description: 'Os dados mock foram regenerados com sucesso. Recarregue a página para ver as mudanças.',
+                    title: 'Data regenerated',
+                    description: 'Mock data has been successfully regenerated. Reload the page to see the changes.',
                   });
                 }}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Regenerar Dados
+                Regenerate Data
               </Button>
               <Button 
                 size="sm" 
@@ -302,13 +316,13 @@ const Settings = () => {
                 onClick={() => {
                   dataService.clearData();
                   toast({
-                    title: 'Dados limpos',
-                    description: 'Todos os dados foram removidos. Recarregue a página para ver as mudanças.',
+                    title: 'Data cleared',
+                    description: 'All data has been removed. Reload the page to see the changes.',
                   });
                 }}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Limpar Dados
+                Clear Data
               </Button>
             </div>
           </CardContent>

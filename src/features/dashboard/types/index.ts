@@ -3,6 +3,7 @@ export interface DashboardStats {
   successRate: number;
   activeDrivers: number;
   averageDeliveryTime: number;
+  newDrivers: number;
 }
 
 export interface DashboardProps {

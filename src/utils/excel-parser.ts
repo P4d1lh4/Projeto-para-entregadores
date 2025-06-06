@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import type { FoxDelivery } from '@/types/delivery';
 
@@ -108,15 +107,91 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Parse all rows to JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        // --- Enhanced Header Detection ---
+        let jsonData = [];
+        const headerKeywords = ['job id', 'status', 'driver', 'customer', 'address', 'pickup', 'delivery'];
+        let headerRow = -1;
+        
+        // Convert the worksheet to an array of arrays to find the header row
+        const sheetArray: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        for (let i = 0; i < Math.min(sheetArray.length, 10); i++) { // Check first 10 rows
+          const row = sheetArray[i];
+          const lowerCaseRow = row.map(cell => String(cell).toLowerCase());
+          const matchCount = lowerCaseRow.filter(cell => headerKeywords.some(kw => cell.includes(kw))).length;
+          
+          // Consider it a header row if it contains at least 3 keywords
+          if (matchCount >= 3) {
+            headerRow = i;
+            break;
+          }
+        }
+        
+        if (headerRow !== -1) {
+          console.log(`✅ Header row detected at row ${headerRow + 1}. Skipping previous rows.`);
+          // Re-parse the sheet from the detected header row
+          jsonData = XLSX.utils.sheet_to_json(worksheet, { range: headerRow });
+        } else {
+          console.warn('⚠️ Could not definitively detect header row. Parsing from the start.');
+          jsonData = XLSX.utils.sheet_to_json(worksheet);
+        }
         
         if (jsonData.length === 0) {
           throw new Error('No data found in the Excel file');
         }
         
+        console.log(`📊 Excel file parsed: ${jsonData.length} rows found`);
+        
         // For debugging - log the first row to see available columns
         console.log('Excel columns detected:', Object.keys(jsonData[0]));
+        
+        // Debug: Count unique drivers in raw data with improved logging and trimming
+        const rawDrivers = new Set<string>();
+        const driverValuesFound: string[] = [];
+        
+        jsonData.forEach((row: any) => {
+          const possibleDriverKeys = [
+            'Delivering Driver', 'delivering_driver', 'DeliveringDriver', 'Driver', 'Courier Name',
+            'Collecting Driver', 'collecting_driver', 'CollectingDriver', 'Pickup Driver'
+          ];
+          
+          possibleDriverKeys.forEach(key => {
+            if (row[key] && typeof row[key] === 'string') {
+              const driverName = row[key].trim();
+              if (driverName) { // Ensure it's not an empty string after trimming
+                rawDrivers.add(driverName);
+                driverValuesFound.push(driverName);
+              }
+            }
+          });
+        });
+        
+        // Sort and log all found driver names for detailed inspection
+        driverValuesFound.sort();
+        console.log(`🚛 All driver name occurrences found in raw data (${driverValuesFound.length} total):`, driverValuesFound);
+        console.log(`🚛 Raw Excel data contains ${rawDrivers.size} unique drivers (after trimming):`, Array.from(rawDrivers).sort());
+        
+        // Log which company name field was found (if any)
+        const firstRow = jsonData[0];
+        const companyFields = [
+          'Company Name', 'company_name', 'CompanyName', 'Company', 'Business Name',
+          'Restaurant Name', 'restaurant_name', 'RestaurantName', 'Restaurant',
+          'Store Name', 'store_name', 'StoreName', 'Store',
+          'Business', 'Merchant', 'merchant_name', 'MerchantName',
+          'Client Company', 'client_company', 'ClientCompany',
+          'Partner', 'partner_name', 'PartnerName',
+          'Vendor', 'vendor_name', 'VendorName',
+          'Establishment', 'establishment_name', 'EstablishmentName',
+          'Nome da Empresa', 'Nome Empresa', 'Empresa', 'nome_empresa',
+          'Nome do Restaurante', 'Nome Restaurante', 'Restaurante', 'nome_restaurante'
+        ];
+        
+        const foundCompanyField = findMatchingKey(firstRow, companyFields);
+        if (foundCompanyField) {
+          console.log(`🏢 Company field found: "${foundCompanyField}" with sample value: "${firstRow[foundCompanyField]}"`);
+        } else {
+          console.log('⚠️ No company field found in XLSX. Available columns:', Object.keys(firstRow));
+        }
         
         // Map Excel data to our FoxDelivery structure with improved column matching
         const deliveries: FoxDelivery[] = jsonData.map((row: any, index) => {
@@ -133,7 +208,18 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
             invoice_number: getValue(['Invoice Number', 'invoice_number', 'InvoiceNumber', 'Invoice #', 'Invoice No']),
             priority: getValue(['Priority', 'priority', 'Urgent or Scheduled (Same-hour or Scheduled time)', 'Job Priority']),
             customer_name: getValue(['Customer Name', 'customer_name', 'CustomerName', 'Customer']),
-            company_name: getValue(['Company Name', 'company_name', 'CompanyName', 'Company', 'Business Name']),
+            company_name: getValue([
+              'Company Name', 'company_name', 'CompanyName', 'Company', 'Business Name',
+              'Restaurant Name', 'restaurant_name', 'RestaurantName', 'Restaurant',
+              'Store Name', 'store_name', 'StoreName', 'Store',
+              'Business', 'Merchant', 'merchant_name', 'MerchantName',
+              'Client Company', 'client_company', 'ClientCompany',
+              'Partner', 'partner_name', 'PartnerName',
+              'Vendor', 'vendor_name', 'VendorName',
+              'Establishment', 'establishment_name', 'EstablishmentName',
+              'Nome da Empresa', 'Nome Empresa', 'Empresa', 'nome_empresa',
+              'Nome do Restaurante', 'Nome Restaurante', 'Restaurante', 'nome_restaurante'
+            ]),
             collecting_driver: getValue(['Collecting Driver', 'collecting_driver', 'CollectingDriver', 'Pickup Driver']),
             delivering_driver: getValue(['Delivering Driver', 'delivering_driver', 'DeliveringDriver', 'Driver', 'Courier Name']),
             pickup_address: getValue(['Pickup', 'pickup_address', 'Pickup Address', 'PickupAddress', 'Collection Address']),
@@ -180,6 +266,17 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
         
         // Process and enhance the data with additional analysis
         const processedDeliveries = enhanceDeliveryData(deliveries);
+        
+        console.log(`✅ Processed ${processedDeliveries.length} deliveries from Excel`);
+        
+        // Final verification of unique drivers in processed data
+        const processedDrivers = new Set<string>();
+        processedDeliveries.forEach(delivery => {
+          if (delivery.delivering_driver) processedDrivers.add(delivery.delivering_driver);
+          if (delivery.collecting_driver) processedDrivers.add(delivery.collecting_driver);
+        });
+        
+        console.log(`🚛 Processed data contains ${processedDrivers.size} unique drivers:`, Array.from(processedDrivers).sort());
         
         resolve(processedDeliveries);
       } catch (error) {

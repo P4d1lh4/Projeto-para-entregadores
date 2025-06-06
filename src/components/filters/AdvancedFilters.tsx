@@ -162,17 +162,17 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            <CardTitle>Filtros Avançados</CardTitle>
+            <CardTitle>Advanced Filters</CardTitle>
             {activeFiltersCount > 0 && (
               <Badge variant="secondary">
-                {activeFiltersCount} ativo{activeFiltersCount !== 1 ? 's' : ''}
+                {activeFiltersCount} active{activeFiltersCount !== 1 ? 's' : ''}
               </Badge>
             )}
           </div>
           <div className="flex items-center gap-2">
             {activeFiltersCount > 0 && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                Limpar
+                Clear
               </Button>
             )}
             <Button 
@@ -180,7 +180,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               size="sm" 
               onClick={() => setIsExpanded(!isExpanded)}
             >
-              {isExpanded ? 'Recolher' : 'Expandir'}
+              {isExpanded ? 'Collapse' : 'Expand'}
             </Button>
           </div>
         </div>
@@ -193,7 +193,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
                 <CheckSquare className="h-4 w-4" />
-                Entregadores ({filters.drivers.length} selecionados)
+                Drivers ({filters.drivers.length} selected)
               </Label>
               <div className="flex items-center gap-2">
                 <Button 
@@ -203,7 +203,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   disabled={filters.drivers.length === availableDrivers.length}
                 >
                   <Check className="h-3 w-3 mr-1" />
-                  Todos
+                  All
                 </Button>
                 <Button 
                   variant="outline" 
@@ -212,7 +212,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   disabled={filters.drivers.length === 0}
                 >
                   <Minus className="h-3 w-3 mr-1" />
-                  Nenhum
+                  None
                 </Button>
               </div>
             </div>
@@ -259,7 +259,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
                 <CheckSquare className="h-4 w-4" />
-                Clientes ({filters.customers.length} selecionados)
+                Customers ({filters.customers.length} selected)
               </Label>
               <div className="flex items-center gap-2">
                 <Button 
@@ -269,7 +269,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   disabled={filters.customers.length === availableCustomers.length}
                 >
                   <Check className="h-3 w-3 mr-1" />
-                  Todos
+                  All
                 </Button>
                 <Button 
                   variant="outline" 
@@ -278,7 +278,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   disabled={filters.customers.length === 0}
                 >
                   <Minus className="h-3 w-3 mr-1" />
-                  Nenhum
+                  None
                 </Button>
               </div>
             </div>
@@ -323,7 +323,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2">
                   <Square className="h-4 w-4" />
-                  Status da Entrega
+                  Delivery Status
                 </Label>
                 <div className="flex items-center gap-2">
                   <Button 
@@ -333,7 +333,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                     disabled={filters.statuses.length === availableStatuses.length}
                   >
                     <Check className="h-3 w-3 mr-1" />
-                    Todos
+                    All
                   </Button>
                   <Button 
                     variant="outline" 
@@ -342,7 +342,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                     disabled={filters.statuses.length === 0}
                   >
                     <Minus className="h-3 w-3 mr-1" />
-                    Nenhum
+                    None
                   </Button>
                 </div>
               </div>
@@ -355,10 +355,10 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                       onCheckedChange={() => toggleArrayFilter('statuses', status)}
                     />
                     <Label htmlFor={`status-${status}`} className="text-sm cursor-pointer">
-                      {status === 'delivered' ? 'Entregue' :
-                       status === 'pending' ? 'Pendente' :
-                       status === 'in_transit' ? 'Em Trânsito' :
-                       status === 'failed' ? 'Falhou' : status}
+                      {status === 'delivered' ? 'Delivered' :
+                       status === 'pending' ? 'Pending' :
+                       status === 'in_transit' ? 'In Transit' :
+                       status === 'failed' ? 'Failed' : status}
                     </Label>
                   </div>
                 ))}
@@ -369,7 +369,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
-                  Cidades
+                  Cities
                 </Label>
                 <div className="flex items-center gap-2">
                   <Button 
@@ -379,7 +379,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                     disabled={filters.cities.length === availableCities.length}
                   >
                     <Check className="h-3 w-3 mr-1" />
-                    Todos
+                    All
                   </Button>
                   <Button 
                     variant="outline" 
@@ -388,7 +388,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                     disabled={filters.cities.length === 0}
                   >
                     <Minus className="h-3 w-3 mr-1" />
-                    Nenhum
+                    None
                   </Button>
                 </div>
               </div>
@@ -413,11 +413,11 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Período de Entrega
+              Delivery Period
             </Label>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="date-from" className="text-sm">De:</Label>
+                <Label htmlFor="date-from" className="text-sm">From:</Label>
                 <Input
                   id="date-from"
                   type="date"
@@ -426,7 +426,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="date-to" className="text-sm">Até:</Label>
+                <Label htmlFor="date-to" className="text-sm">To:</Label>
                 <Input
                   id="date-to"
                   type="date"
@@ -441,7 +441,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Star className="h-4 w-4" />
-              Faixa de Avaliação: {filters.ratingRange[0]} - {filters.ratingRange[1]} estrelas
+              Rating Range: {filters.ratingRange[0]} - {filters.ratingRange[1]} stars
             </Label>
             <Slider
               value={filters.ratingRange}
@@ -457,7 +457,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4" />
-              Número de Entregas: {filters.deliveryCountRange[0]} - {filters.deliveryCountRange[1]}
+              Delivery Count Range: {filters.deliveryCountRange[0]} - {filters.deliveryCountRange[1]}
             </Label>
             <Slider
               value={filters.deliveryCountRange}
@@ -473,7 +473,7 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           <div className="space-y-3">
             <Label className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Tempo Médio (min): {filters.timeRange[0]} - {filters.timeRange[1]}
+              Average Time (min): {filters.timeRange[0]} - {filters.timeRange[1]}
             </Label>
             <Slider
               value={filters.timeRange}

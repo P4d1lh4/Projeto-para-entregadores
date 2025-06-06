@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -10,7 +9,7 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { DriverData } from '@/lib/file-utils';
+import type { DriverData } from '@/features/deliveries/types';
 
 type DriverTableProps = {
   drivers: DriverData[];
@@ -32,8 +31,7 @@ const DriverTable: React.FC<DriverTableProps> = ({ drivers }) => {
               <TableHead>Driver</TableHead>
               <TableHead>Deliveries</TableHead>
               <TableHead>Success Rate</TableHead>
-              <TableHead>Avg Time (min)</TableHead>
-              <TableHead className="text-right">Rating</TableHead>
+              <TableHead className="text-right">Avg Time (min)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -47,10 +45,7 @@ const DriverTable: React.FC<DriverTableProps> = ({ drivers }) => {
                     <span>{Math.round(driver.successRate * 100)}%</span>
                   </div>
                 </TableCell>
-                <TableCell>{driver.averageTime}</TableCell>
-                <TableCell className="text-right">
-                  <span className="font-medium">{driver.rating}</span>/5
-                </TableCell>
+                <TableCell className="text-right">{driver.averageTime} min</TableCell>
               </TableRow>
             ))}
           </TableBody>

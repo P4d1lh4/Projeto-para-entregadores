@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Table,
@@ -41,6 +40,33 @@ const DeliveryTable: React.FC<DeliveryTableProps> = ({ deliveries, limit }) => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const calculateDeliveryTime = (delivery: DeliveryData): string => {
+    // Try to use Fox delivery data first (collected_at and delivered_at)
+    const foxDelivery = delivery as any;
+    if (foxDelivery.collected_at && foxDelivery.delivered_at) {
+      try {
+        const collectedTime = new Date(foxDelivery.collected_at);
+        const deliveredTime = new Date(foxDelivery.delivered_at);
+        const durationMinutes = (deliveredTime.getTime() - collectedTime.getTime()) / (1000 * 60);
+        
+        if (durationMinutes > 0 && durationMinutes < 1440) { // Less than 24 hours
+          if (durationMinutes < 60) {
+            return `${Math.round(durationMinutes)}min`;
+          } else {
+            const hours = Math.floor(durationMinutes / 60);
+            const minutes = Math.round(durationMinutes % 60);
+            return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`;
+          }
+        }
+      } catch (e) {
+        // Invalid dates, fall through to default
+      }
+    }
+    
+    // Default fallback - use a reasonable estimate based on delivery data
+    return '-';
   };
   
   const getStatusBadgeVariant = (status: string) => {
@@ -87,7 +113,7 @@ const DeliveryTable: React.FC<DeliveryTableProps> = ({ deliveries, limit }) => {
               <TableHead>Driver</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Rating</TableHead>
+              <TableHead className="text-right">Delivery Time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -109,7 +135,7 @@ const DeliveryTable: React.FC<DeliveryTableProps> = ({ deliveries, limit }) => {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  {delivery.rating !== undefined ? `${delivery.rating}/5` : '-'}
+                  {calculateDeliveryTime(delivery)}
                 </TableCell>
               </TableRow>
             ))}

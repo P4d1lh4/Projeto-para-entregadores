@@ -26,7 +26,7 @@ interface SearchResult {
 
 const AddressSearch: React.FC<AddressSearchProps> = ({
   onLocationSelect,
-  placeholder = "Pesquisar endereço...",
+  placeholder = "Search address...",
   className = ""
 }) => {
   const [query, setQuery] = useState('');
@@ -134,7 +134,7 @@ const AddressSearch: React.FC<AddressSearchProps> = ({
                     </div>
                     <div className="flex items-center gap-1 mt-1">
                       <Badge variant="secondary" className="text-xs">
-                        {result.type === 'address' ? 'Endereço' : 'Local'}
+                        {result.type === 'address' ? 'Address' : 'Location'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {result.latitude.toFixed(4)}, {result.longitude.toFixed(4)}

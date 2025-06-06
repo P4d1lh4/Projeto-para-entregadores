@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { dataService, type DataServiceResult } from '../services/dataService';
 import type { DeliveryData, DriverData, CustomerData } from '../types';
+import { parseFile, formatDeliveryData } from '@/lib/file-utils';
 
 export interface UseDeliveryDataResult {
   deliveryData: DeliveryData[];
@@ -23,6 +24,24 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
     try {
       setLoading(true);
       setError(null);
+
+      // Try to load data from the static CSV first
+      try {
+        const response = await fetch('/arquivo-csv/export_job_(15)[1] - Worksheet.csv');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const blob = await response.blob();
+        const file = new File([blob], 'export_job_(15)[1] - Worksheet.csv', { type: 'text/csv' });
+        
+        console.log('📄 Loading data from static CSV file...');
+        const parsedData = await parseFile(file);
+        const formattedData = formatDeliveryData(parsedData);
+        await dataService.updateDeliveryData(formattedData);
+        console.log('✅ Static CSV data loaded and stored successfully.');
+      } catch (e) {
+        console.warn('⚠️ Could not load static CSV. This is normal if the file does not exist. Falling back to stored data.', e);
+      }
 
       const [deliveryResult, driverResult, customerResult] = await Promise.all([
         dataService.getDeliveryData(),

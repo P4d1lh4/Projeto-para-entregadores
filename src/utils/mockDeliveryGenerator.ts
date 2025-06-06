@@ -1,26 +1,32 @@
 import type { FoxDelivery } from '@/types/delivery';
 
-// Função para gerar dados mock de delivery no formato correto
-export const generateMockFoxDeliveries = (count: number = 100): FoxDelivery[] => {
-  const drivers = ['João Silva', 'Maria Santos', 'Pedro Oliveira', 'Ana Costa', 'Carlos Mendes'];
+// Function to generate mock delivery data in the correct format
+export function generateMockFoxDeliveries(count: number = 50): FoxDelivery[] {
+  const deliveries: FoxDelivery[] = [];
+  
+  const statusOptions = ['delivered', 'in_transit', 'pending', 'collected', 'cancelled'];
+  
+  const drivers = [
+    'Carlos Silva', 'Maria Santos', 'João Oliveira', 'Ana Costa', 'Pedro Sousa',
+    'Luiza Pereira', 'Miguel Ferreira', 'Sofia Rodrigues', 'Tiago Alves', 'Inês Martins'
+  ];
+  
   const customers = [
     'Empresa ABC Ltda', 'Tech Solutions', 'Comercial XYZ', 'Farmácia Central', 'Restaurante Bom Sabor',
     'Loja de Roupas Fashion', 'Mercado do Bairro', 'Consultório Médico', 'Escritório Legal', 'Café & Cia'
   ];
   
   const areas = ['Centro', 'Zona Norte', 'Zona Sul', 'Zona Oeste', 'Zona Leste'];
-  const statusOptions = ['delivered', 'in_transit', 'pending', 'collected', 'cancelled'];
   const serviceTypes = ['Standard', 'Express', 'Same Day', 'Next Day'];
   const priorities = ['Normal', 'High', 'Urgent', 'Low'];
 
-  const deliveries: FoxDelivery[] = [];
-
+  // Generate dates within the last 30 days
   for (let i = 0; i < count; i++) {
-    // Gerar datas nos últimos 30 dias
+    // Generate dates within the last 30 days
     const createdDate = new Date();
     createdDate.setDate(createdDate.getDate() - Math.floor(Math.random() * 30));
     
-    // Calcular datas de coleta e entrega baseadas na data de criação
+    // Calculate pickup and delivery dates based on creation date
     const collectedDate = new Date(createdDate);
     collectedDate.setMinutes(collectedDate.getMinutes() + Math.floor(Math.random() * 120) + 30);
     
@@ -61,10 +67,10 @@ export const generateMockFoxDeliveries = (count: number = 100): FoxDelivery[] =>
       distance: Math.round(distance * 100) / 100,
       pickup_customer_name: customers[Math.floor(Math.random() * customers.length)],
       pickup_mobile_number: `+55 11 9${Math.floor(Math.random() * 90000000) + 10000000}`,
-      collection_notes: Math.random() > 0.8 ? 'Aguardar no portão principal' : undefined,
+      collection_notes: Math.random() > 0.8 ? 'Wait at main gate' : undefined,
       delivery_customer_name: customers[Math.floor(Math.random() * customers.length)],
       delivery_mobile_number: `+55 11 9${Math.floor(Math.random() * 90000000) + 10000000}`,
-      delivery_notes: Math.random() > 0.7 ? 'Entregar na recepção' : undefined,
+      delivery_notes: Math.random() > 0.7 ? 'Deliver to reception' : undefined,
       recipient_email: `recebedor@${customers[Math.floor(Math.random() * customers.length)].toLowerCase().replace(/\s+/g, '')}.com`,
       reference: `REF-${Math.floor(Math.random() * 999999)}`,
       submitted_at: createdDate.toISOString(),
@@ -72,7 +78,7 @@ export const generateMockFoxDeliveries = (count: number = 100): FoxDelivery[] =>
       collected_at: isCollected ? collectedDate.toISOString() : undefined,
       delivered_at: isDelivered ? deliveredDate.toISOString() : undefined,
       canceled_at: status === 'cancelled' ? new Date(createdDate.getTime() + Math.random() * 3600000).toISOString() : undefined,
-      driver_notes: Math.random() > 0.8 ? 'Entrega realizada com sucesso' : undefined,
+      driver_notes: Math.random() > 0.8 ? 'Delivery completed successfully' : undefined,
       return_job: Math.random() > 0.9,
       payment_method: Math.random() > 0.5 ? 'card' : 'cash',
       collected_waiting_time: isCollected ? `${Math.floor(Math.random() * 15)}` : undefined,
@@ -96,4 +102,4 @@ export const generateMockFoxDeliveries = (count: number = 100): FoxDelivery[] =>
   }
 
   return deliveries;
-}; 
+} 

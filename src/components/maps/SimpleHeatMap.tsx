@@ -24,11 +24,11 @@ const SimpleHeatMap: React.FC<SimpleHeatMapProps> = ({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Mapa de Calor das Entregas</CardTitle>
+          <CardTitle>Delivery Heat Map</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
-            Nenhum dado disponível para o mapa de calor
+            No data available for heat map
           </div>
         </CardContent>
       </Card>
@@ -79,7 +79,7 @@ const SimpleHeatMap: React.FC<SimpleHeatMapProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Mapa de Calor das Entregas</CardTitle>
+        <CardTitle>Delivery Heat Map</CardTitle>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>🔵 Baixa</span>
           <span>🟢 Média-Baixa</span>
@@ -136,7 +136,7 @@ const SimpleHeatMap: React.FC<SimpleHeatMapProps> = ({
                   >
                     <title>
                       {point.region}
-                      {'\n'}Entregas: {point.deliveries}
+                      {'\n'}Deliveries: {point.deliveries}
                       {'\n'}Intensidade: {(normalizedIntensity * 100).toFixed(1)}%
                     </title>
                   </circle>
@@ -177,7 +177,7 @@ const SimpleHeatMap: React.FC<SimpleHeatMapProps> = ({
           </div>
           <div className="text-center">
             <div className="font-medium">{points.reduce((sum, p) => sum + p.deliveries, 0)}</div>
-            <div className="text-muted-foreground">Total Entregas</div>
+            <div className="text-muted-foreground">Total Deliveries</div>
           </div>
           <div className="text-center">
             <div className="font-medium">{Math.round(points.reduce((sum, p) => sum + p.deliveries, 0) / points.length)}</div>

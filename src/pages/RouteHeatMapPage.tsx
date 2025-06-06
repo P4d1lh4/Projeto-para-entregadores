@@ -57,7 +57,7 @@ const RouteHeatMapPage: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Heat Map de Rotas</h1>
+        <h1 className="text-3xl font-bold">Route Heat Map</h1>
         <div className="animate-pulse space-y-4">
           <div className="h-64 bg-muted rounded-lg"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -74,9 +74,9 @@ const RouteHeatMapPage: React.FC = () => {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">Heat Map de Rotas</h1>
+          <h1 className="text-3xl font-bold">Route Heat Map</h1>
           <p className="text-muted-foreground">
-            Visualize a densidade das rotas de entrega e identifique áreas de alto tráfego
+            Visualize delivery route density and identify high-traffic areas
           </p>
         </div>
         <EmptyState />
@@ -87,9 +87,9 @@ const RouteHeatMapPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Heat Map de Rotas</h1>
+        <h1 className="text-3xl font-bold">Route Heat Map</h1>
         <p className="text-muted-foreground">
-          Visualize a densidade das rotas de entrega e identifique áreas de alto tráfego
+          Visualize delivery route density and identify high-traffic areas
         </p>
       </div>
 
@@ -97,52 +97,52 @@ const RouteHeatMapPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Entregas</CardTitle>
+            <CardTitle className="text-sm font-medium">Total of Deliveries</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalDeliveries.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              {geocodedDeliveries} geocodificadas
+              {geocodedDeliveries} geocoded
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Geocodificação</CardTitle>
+            <CardTitle className="text-sm font-medium">Geocoding Rate</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{geocodingRate}%</div>
             <Badge variant={geocodingRate > 80 ? "default" : geocodingRate > 50 ? "secondary" : "destructive"}>
-              {geocodingRate > 80 ? "Excelente" : geocodingRate > 50 ? "Bom" : "Baixo"}
+              {geocodingRate > 80 ? "Excellent" : geocodingRate > 50 ? "Good" : "Low"}
             </Badge>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Áreas de Cobertura</CardTitle>
+            <CardTitle className="text-sm font-medium">Coverage Areas</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{Math.max(pickupAreas, deliveryAreas)}</div>
             <p className="text-xs text-muted-foreground">
-              {pickupAreas} coletas • {deliveryAreas} entregas
+              {pickupAreas} pickups • {deliveryAreas} deliveries
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Entregadores Ativos</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Drivers</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{Object.keys(driverStats).length}</div>
             <p className="text-xs text-muted-foreground">
-              {topDrivers[0]?.[0]} lidera com {topDrivers[0]?.[1]} entregas
+              {topDrivers[0]?.[0]} leads with {topDrivers[0]?.[1]} deliveries
             </p>
           </CardContent>
         </Card>
@@ -161,10 +161,10 @@ const RouteHeatMapPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Route className="h-5 w-5" />
-              Top Entregadores
+              Top Drivers
             </CardTitle>
             <CardDescription>
-              Entregadores com maior volume de entregas
+              Drivers with the highest delivery volume
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -178,7 +178,7 @@ const RouteHeatMapPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="font-medium">{driver}</p>
-                        <p className="text-sm text-muted-foreground">{count} entregas</p>
+                        <p className="text-sm text-muted-foreground">{count} deliveries</p>
                       </div>
                     </div>
                     <Badge variant="secondary">
@@ -187,7 +187,7 @@ const RouteHeatMapPage: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">Nenhum dado disponível</p>
+                <p className="text-sm text-muted-foreground">No data available</p>
               )}
             </div>
           </CardContent>
@@ -198,10 +198,10 @@ const RouteHeatMapPage: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              Insights do Heat Map
+              Heat Map Insights
             </CardTitle>
             <CardDescription>
-              Análise dos padrões de densidade de rotas
+              Analysis of route density patterns
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -209,31 +209,31 @@ const RouteHeatMapPage: React.FC = () => {
               {geocodingRate > 50 ? (
                 <>
                   <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
-                    <h4 className="font-medium text-blue-900">Zonas de Alta Densidade</h4>
+                    <h4 className="font-medium text-blue-900">High Density Zones</h4>
                     <p className="text-sm text-blue-700 mt-1">
-                      Áreas com maior concentração de entregas indicam corredores principais de negócios
+                      Areas with higher concentration of deliveries indicate main business corridors
                     </p>
                   </div>
                   
                   <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
-                    <h4 className="font-medium text-green-900">Oportunidades de Otimização</h4>
+                    <h4 className="font-medium text-green-900">Optimization Opportunities</h4>
                     <p className="text-sm text-green-700 mt-1">
-                      Rotas com baixa densidade podem ser consolidadas para maior eficiência
+                      Routes with low density can be consolidated for greater efficiency
                     </p>
                   </div>
                   
                   <div className="p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
-                    <h4 className="font-medium text-yellow-900">Expansão de Cobertura</h4>
+                    <h4 className="font-medium text-yellow-900">Expansion Opportunities</h4>
                     <p className="text-sm text-yellow-700 mt-1">
-                      Áreas sem cobertura representam oportunidades de crescimento
+                      Areas without coverage represent growth opportunities
                     </p>
                   </div>
                 </>
               ) : (
                 <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
-                  <h4 className="font-medium text-orange-900">Dados Insuficientes</h4>
-                  <p className="text-sm text-orange-700 mt-1">
-                    Para uma análise completa do heat map, é necessário geocodificar mais endereços ou importar dados com coordenadas.
+                  <h4 className="font-medium text-orange-900">Insufficient Data</h4>
+                  <p className="text-sm text-muted-foreground">
+                    For a complete heat map analysis, it's necessary to geocode more addresses or import data with coordinates.
                   </p>
                 </div>
               )}

@@ -12,8 +12,7 @@ import {
   Award,
   AlertTriangle,
   CheckCircle,
-  Truck,
-  Star
+  Truck
 } from 'lucide-react';
 import type { DeliveryData, DriverData } from '@/lib/file-utils';
 
@@ -114,7 +113,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
         totalDeliveries: driver.deliveries,
         successRate: driver.successRate * 100,
         avgTime: driver.averageTime,
-        rating: driver.rating,
+
         weeklyTrend: thisWeek - lastWeek,
         efficiency,
         coverage,
@@ -135,13 +134,12 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
 
     const totalDeliveries = driverMetrics.reduce((sum, d) => sum + d.totalDeliveries, 0);
     const avgSuccessRate = driverMetrics.reduce((sum, d) => sum + d.successRate, 0) / driverMetrics.length;
-    const avgRating = driverMetrics.reduce((sum, d) => sum + d.rating, 0) / driverMetrics.length;
+
     const avgEfficiency = driverMetrics.reduce((sum, d) => sum + d.efficiency, 0) / driverMetrics.length;
 
     return {
       totalDeliveries,
       avgSuccessRate,
-      avgRating,
       avgEfficiency,
       topPerformer: driverMetrics.reduce((top, current) => 
         current.efficiency > top.efficiency ? current : top
@@ -199,7 +197,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
 
           <TabsContent value="overview" className="space-y-4">
             {aggregatedMetrics && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -224,17 +222,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Average Rating</p>
-                        <p className="text-2xl font-bold">{aggregatedMetrics.avgRating.toFixed(1)}</p>
-                      </div>
-                      <Star className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  </CardContent>
-                </Card>
+
 
                 <Card>
                   <CardContent className="pt-6">
@@ -273,10 +261,7 @@ export const DriverAnalyticsAdvanced: React.FC<DriverAnalyticsAdvancedProps> = (
                         <Badge {...getPerformanceBadge(driver.successRate)}>
                           {driver.successRate.toFixed(1)}%
                         </Badge>
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm font-medium">{driver.rating}</span>
-                        </div>
+
                       </div>
                     </div>
                   </CardContent>

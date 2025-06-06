@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
-import { Loader2, Filter, Search, Users, Star, TrendingUp, Clock, MapPin, Package, Calendar, Phone, Mail, Award } from 'lucide-react';
+import { Loader2, Filter, Search, Users, TrendingUp, Clock, MapPin, Package, Calendar, Phone, Mail, Award } from 'lucide-react';
+import { calculateActiveDrivers } from '@/features/dashboard/utils/calculations';
 import type { DriverData, DeliveryData } from '@/features/deliveries/types';
 
 interface DetailedDriverStats {
@@ -17,7 +18,6 @@ interface DetailedDriverStats {
   inTransitCount: number;
   recentDeliveries: number;
   uniqueCustomers: number;
-  avgRating: number;
   deliveries: DeliveryData[];
 }
 
@@ -32,7 +32,6 @@ type DriversProps = {
 const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
   const { deliveryData, driverData: hookDriverData, loading, error } = useDeliveryData();
   const [searchTerm, setSearchTerm] = useState('');
-  const [minRating, setMinRating] = useState('');
   const [minDeliveries, setMinDeliveries] = useState('');
   
   // Modal states
@@ -44,45 +43,99 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
   
   console.log('🚛 DRIVERS: Rendering with', drivers.length, 'drivers');
 
+  // The `drivers` array is already deduplicated by `calculateDriverMetrics`.
+  // Using its length directly ensures consistency between the stat card and the table.
+  const actualTotalDrivers = drivers.length;
+
   const filteredDrivers = useMemo(() => {
     return drivers.filter(driver => {
       const nameMatch = !searchTerm || driver.name.toLowerCase().includes(searchTerm.toLowerCase());
-      const ratingMatch = !minRating || (driver.rating && driver.rating >= parseFloat(minRating));
       const deliveriesMatch = !minDeliveries || (driver.deliveries && driver.deliveries >= parseInt(minDeliveries));
       
-      return nameMatch && ratingMatch && deliveriesMatch;
+      return nameMatch && deliveriesMatch;
     });
-  }, [drivers, searchTerm, minRating, minDeliveries]);
+  }, [drivers, searchTerm, minDeliveries]);
 
   const stats = useMemo(() => {
     if (filteredDrivers.length === 0) {
-      return { avgRating: 0, avgSuccessRate: 0, avgTime: 0, totalDrivers: 0 };
+      return { avgSuccessRate: 0, avgTime: 0, totalDrivers: actualTotalDrivers };
     }
 
-    const validRatings = filteredDrivers.filter(driver => driver.rating && driver.rating > 0);
-    const validSuccessRates = filteredDrivers.filter(driver => driver.successRate && driver.successRate > 0);
-    const validTimes = filteredDrivers.filter(driver => driver.averageTime && driver.averageTime > 0);
+    // Calculate more accurate success rates using actual delivery data
+    let totalDeliveries = 0;
+    let totalSuccessfulDeliveries = 0;
+    let totalTime = 0;
+    let timeCount = 0;
 
-    const avgRating = validRatings.length > 0 
-      ? validRatings.reduce((sum, driver) => sum + driver.rating, 0) / validRatings.length 
-      : 0;
-    const avgSuccessRate = validSuccessRates.length > 0 
-      ? validSuccessRates.reduce((sum, driver) => sum + driver.successRate, 0) / validSuccessRates.length 
-      : 0;
-    const avgTime = validTimes.length > 0 
-      ? validTimes.reduce((sum, driver) => sum + driver.averageTime, 0) / validTimes.length 
-      : 0;
+    filteredDrivers.forEach(driver => {
+      // Get deliveries for this driver to calculate accurate success rate
+      const driverDeliveries = deliveryData ? deliveryData.filter(delivery => 
+        delivery.driverId === driver.id || 
+        delivery.driverName === driver.name ||
+        (delivery as any).collecting_driver === driver.name ||
+        (delivery as any).delivering_driver === driver.name
+      ) : [];
 
-    return { avgRating, avgSuccessRate, avgTime, totalDrivers: filteredDrivers.length };
-  }, [filteredDrivers]);
+      if (driverDeliveries.length > 0) {
+        // Use actual delivery data for more precise calculations
+        const successfulCount = driverDeliveries.filter(d => {
+          const status = d.status || (d as any).status;
+          return status === 'delivered' || 
+                 status === 'Delivered' ||
+                 (d as any).delivered_at; // Alternative check: has delivered timestamp
+        }).length;
+
+        totalDeliveries += driverDeliveries.length;
+        totalSuccessfulDeliveries += successfulCount;
+
+        // Calculate actual delivery times when available
+        driverDeliveries.forEach(delivery => {
+          if ((delivery as any).collected_at && (delivery as any).delivered_at) {
+            try {
+              const collectedTime = new Date((delivery as any).collected_at);
+              const deliveredTime = new Date((delivery as any).delivered_at);
+              const timeInMinutes = (deliveredTime.getTime() - collectedTime.getTime()) / (1000 * 60);
+              
+              // Only include reasonable times (5 minutes to 8 hours)
+              if (timeInMinutes > 5 && timeInMinutes < 480) {
+                totalTime += timeInMinutes;
+                timeCount++;
+              }
+            } catch (e) {
+              // Invalid dates, skip
+            }
+          }
+        });
+      } else {
+        // Fallback to driver.successRate if no delivery data available
+        if (driver.deliveries && driver.successRate) {
+          totalDeliveries += driver.deliveries;
+          totalSuccessfulDeliveries += Math.round(driver.deliveries * driver.successRate);
+        }
+
+        if (driver.averageTime) {
+          totalTime += driver.averageTime;
+          timeCount++;
+        }
+      }
+    });
+
+    const avgSuccessRate = totalDeliveries > 0 ? totalSuccessfulDeliveries / totalDeliveries : 0;
+    const avgTime = timeCount > 0 ? totalTime / timeCount : 0;
+
+    return { 
+      avgSuccessRate, 
+      avgTime: Math.round(avgTime), 
+      totalDrivers: actualTotalDrivers 
+    };
+  }, [filteredDrivers, actualTotalDrivers, deliveryData]);
 
   const clearFilters = () => {
     setSearchTerm('');
-    setMinRating('');
     setMinDeliveries('');
   };
 
-  const hasFilters = searchTerm || minRating || minDeliveries;
+  const hasFilters = searchTerm || minDeliveries;
 
   // Function to get detailed driver information
   const getDriverDetails = (driver: DriverData): DetailedDriverData => {
@@ -112,12 +165,6 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
     // Get unique customers
     const uniqueCustomers = new Set(driverDeliveries.map(d => d.customerName).filter(Boolean));
 
-    // Average rating from delivered orders
-    const ratedDeliveries = driverDeliveries.filter(d => d.rating && d.status === 'delivered');
-    const avgRating = ratedDeliveries.length > 0 
-      ? ratedDeliveries.reduce((sum, d) => sum + (d.rating || 0), 0) / ratedDeliveries.length 
-      : driver.rating || 0;
-
     return {
       ...driver,
       detailedStats: {
@@ -128,7 +175,6 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
         inTransitCount,
         recentDeliveries: recentDeliveries.length,
         uniqueCustomers: uniqueCustomers.size,
-        avgRating: Math.round(avgRating * 10) / 10,
         deliveries: driverDeliveries.sort((a, b) => {
           try {
             return new Date(b.deliveryTime).getTime() - new Date(a.deliveryTime).getTime();
@@ -164,66 +210,46 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
     );
   }
 
-  return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Driver Analysis</h1>
-        <p className="text-muted-foreground">
-          Manage and analyze driver performance
-        </p>
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-destructive">{error}</p>
+          <p className="text-muted-foreground">Unable to load driver data</p>
+        </div>
       </div>
+    );
+  }
 
-      {/* Error Display */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <p className="text-red-600">⚠️ {error}</p>
-          </CardContent>
-        </Card>
-      )}
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Drivers</h1>
+        <p className="text-muted-foreground">Manage and analyze driver performance</p>
+      </div>
 
       {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            Filtros
-            {hasFilters && (
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                Ativos
-              </span>
-            )}
+            Filters
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="search">Buscar por nome</Label>
+              <Label htmlFor="search">Search by name</Label>
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="Digite o nome..."
+                  placeholder="Enter name..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
                 />
               </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="minRating">Avaliação mínima</Label>
-              <Input
-                id="minRating"
-                type="number"
-                min="0"
-                max="5"
-                step="0.1"
-                placeholder="Ex: 4.0"
-                value={minRating}
-                onChange={(e) => setMinRating(e.target.value)}
-              />
             </div>
             
             <div>
@@ -242,7 +268,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
           {hasFilters && (
             <div className="flex justify-end">
               <Button variant="outline" onClick={clearFilters} size="sm">
-                Limpar filtros
+                Clear filters
               </Button>
             </div>
           )}
@@ -250,15 +276,15 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
       </Card>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Drivers</p>
-                <p className="text-2xl font-bold">{filteredDrivers.length}</p>
+                <p className="text-2xl font-bold">{stats.totalDrivers}</p>
                 {hasFilters && drivers.length !== filteredDrivers.length && (
-                  <p className="text-xs text-blue-600">de {drivers.length}</p>
+                  <p className="text-xs text-blue-600">{filteredDrivers.length} showing</p>
                 )}
               </div>
               <Users className="h-8 w-8 text-blue-600" />
@@ -270,19 +296,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Avaliação Média</p>
-                <p className="text-2xl font-bold">{stats.avgRating.toFixed(1)}</p>
-              </div>
-              <Star className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Taxa de Sucesso</p>
+                <p className="text-sm text-muted-foreground">Success Rate</p>
                 <p className="text-2xl font-bold">{(stats.avgSuccessRate * 100).toFixed(1)}%</p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
@@ -294,7 +308,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Tempo Médio</p>
+                <p className="text-sm text-muted-foreground">Average Time</p>
                 <p className="text-2xl font-bold">{stats.avgTime.toFixed(0)}min</p>
               </div>
               <Clock className="h-8 w-8 text-purple-600" />
@@ -314,31 +328,24 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="text-left p-2">Nome</th>
+                    <th className="text-left p-2">Name</th>
                     <th className="text-left p-2">Deliveries</th>
-                    <th className="text-left p-2">Avaliação</th>
-                    <th className="text-left p-2">Taxa de Sucesso</th>
-                    <th className="text-left p-2">Tempo Médio</th>
+                    <th className="text-left p-2">Success Rate</th>
+                    <th className="text-left p-2">Average Time</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredDrivers
-                    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                    .sort((a, b) => (b.deliveries || 0) - (a.deliveries || 0))
                     .map((driver) => (
                       <tr 
                         key={driver.id} 
                         className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => openDriverDetails(driver)}
-                        title="Clique para ver detalhes"
+                        title="Click to view details"
                       >
                         <td className="p-2 font-medium">{driver.name}</td>
                         <td className="p-2">{driver.deliveries || 0}</td>
-                        <td className="p-2">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-yellow-500" />
-                            {(driver.rating || 0).toFixed(1)}
-                          </div>
-                        </td>
                         <td className="p-2">
                           <span className={`px-2 py-1 rounded text-sm ${
                             (driver.successRate || 0) >= 0.8 
@@ -387,11 +394,11 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5" />
-                    Informações Gerais
+                    General Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
                         {selectedDriver.detailedStats?.totalDeliveries || 0}
@@ -402,85 +409,52 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                       <div className="text-2xl font-bold text-green-600">
                         {((selectedDriver.successRate || 0) * 100).toFixed(1)}%
                       </div>
-                      <div className="text-sm text-muted-foreground">Taxa de Sucesso</div>
+                      <div className="text-sm text-muted-foreground">Success Rate</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-purple-600">
                         {(selectedDriver.averageTime || 0).toFixed(0)} min
                       </div>
-                      <div className="text-sm text-muted-foreground">Tempo Médio</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-yellow-600 flex items-center justify-center gap-1">
-                        <Star className="h-5 w-5" />
-                        {(selectedDriver.detailedStats?.avgRating || 0).toFixed(1)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Avaliação Média</div>
+                      <div className="text-sm text-muted-foreground">Average Time</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Status Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Distribuição de Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="flex items-center gap-3 p-3 border rounded-lg">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <div>
-                        <div className="font-semibold">{selectedDriver.detailedStats?.deliveredCount || 0}</div>
-                        <div className="text-sm text-muted-foreground">Entregues</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 border rounded-lg">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <div>
-                        <div className="font-semibold">{selectedDriver.detailedStats?.inTransitCount || 0}</div>
-                        <div className="text-sm text-muted-foreground">Em Trânsito</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 border rounded-lg">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                      <div>
-                        <div className="font-semibold">{selectedDriver.detailedStats?.pendingCount || 0}</div>
-                        <div className="text-sm text-muted-foreground">Pendentes</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 border rounded-lg">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                      <div>
-                        <div className="font-semibold">{selectedDriver.detailedStats?.failedCount || 0}</div>
-                        <div className="text-sm text-muted-foreground">Falharam</div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Activity & Performance */}
+              {/* Delivery Stats */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5" />
-                      Atividade Recente
+                      <Package className="h-5 w-5" />
+                      Delivery Statistics
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Últimos 7 dias</span>
-                        <span className="font-semibold">{selectedDriver.detailedStats?.recentDeliveries || 0} deliveries</span>
+                        <span className="text-muted-foreground">Completed</span>
+                        <Badge variant="default">
+                          {selectedDriver.detailedStats?.deliveredCount || 0}
+                        </Badge>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Unique customers</span>
-                        <span className="font-semibold">{selectedDriver.detailedStats?.uniqueCustomers || 0}</span>
+                        <span className="text-muted-foreground">Failed</span>
+                        <Badge variant="destructive">
+                          {selectedDriver.detailedStats?.failedCount || 0}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">In Transit</span>
+                        <Badge variant="secondary">
+                          {selectedDriver.detailedStats?.inTransitCount || 0}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Pending</span>
+                        <Badge variant="outline">
+                          {selectedDriver.detailedStats?.pendingCount || 0}
+                        </Badge>
                       </div>
                     </div>
                   </CardContent>
@@ -496,15 +470,27 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Posição no ranking</span>
+                        <span className="text-muted-foreground">Position in ranking</span>
                         <Badge variant="secondary">
-                          #{filteredDrivers.findIndex(d => d.id === selectedDriver.id) + 1} de {filteredDrivers.length}
+                          #{filteredDrivers.findIndex(d => d.id === selectedDriver.id) + 1} of {filteredDrivers.length}
                         </Badge>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Status</span>
                         <Badge variant={selectedDriver.successRate >= 0.8 ? "default" : "secondary"}>
-                          {selectedDriver.successRate >= 0.8 ? "Excelente" : selectedDriver.successRate >= 0.6 ? "Bom" : "Precisa melhorar"}
+                          {selectedDriver.successRate >= 0.8 ? "Excellent" : selectedDriver.successRate >= 0.6 ? "Good" : "Needs improvement"}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Recent deliveries (7d)</span>
+                        <Badge variant="outline">
+                          {selectedDriver.detailedStats?.recentDeliveries || 0}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Unique customers</span>
+                        <Badge variant="outline">
+                          {selectedDriver.detailedStats?.uniqueCustomers || 0}
                         </Badge>
                       </div>
                     </div>
@@ -516,41 +502,29 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Last 10 Deliveries
+                    <Calendar className="h-5 w-5" />
+                    Recent Deliveries
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                  <div className="space-y-2">
                     {selectedDriver.detailedStats?.deliveries?.map((delivery, index) => (
-                      <div key={delivery.id} className="flex justify-between items-center p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={
-                              delivery.status === 'delivered' ? 'default' : 
-                              delivery.status === 'in_transit' ? 'secondary' : 
-                              delivery.status === 'pending' ? 'outline' : 'destructive'
-                            }>
-                              {delivery.status === 'delivered' ? 'Entregue' :
-                               delivery.status === 'in_transit' ? 'Em Trânsito' :
-                               delivery.status === 'pending' ? 'Pendente' : 'Falhou'}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(delivery.deliveryTime).toLocaleDateString('pt-BR')}
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            <div className="font-medium">{delivery.customerName}</div>
-                            <div className="text-muted-foreground">{delivery.address}</div>
+                      <div key={index} className="flex justify-between items-center p-2 border rounded">
+                        <div>
+                          <div className="font-medium">{delivery.customerName}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {delivery.deliveryTime ? new Date(delivery.deliveryTime).toLocaleDateString() : 'N/A'}
                           </div>
                         </div>
                         <div className="text-right">
-                          {delivery.rating && (
-                            <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 text-yellow-500" />
-                              <span className="font-semibold">{delivery.rating}</span>
-                            </div>
-                          )}
+                          <Badge 
+                            variant={
+                              delivery.status === 'delivered' ? 'default' : 
+                              delivery.status === 'failed' ? 'destructive' : 'secondary'
+                            }
+                          >
+                            {delivery.status}
+                          </Badge>
                         </div>
                       </div>
                     )) || (

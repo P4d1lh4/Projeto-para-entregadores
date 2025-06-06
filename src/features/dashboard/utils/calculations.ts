@@ -24,12 +24,26 @@ const normalizeDriverId = (value: any): string | null => {
     .trim();
 };
 
-// Enhanced function to extract and map driver identifiers
+// Enhanced function to extract and map driver identifiers using job_id
 const extractDriverIdentifier = (delivery: any): string | null => {
-  // Priority list of fields to check for driver identification
+  // Priority 1: Use job_id combined with driver name for unique identification
+  if (delivery.job_id) {
+    const driverName = delivery.collecting_driver || delivery.delivering_driver || delivery.driverId || delivery.driver;
+    if (driverName) {
+      const normalized = normalizeDriverId(driverName);
+      if (normalized) {
+        // Return combination of job_id and normalized driver name for tracking
+        return `${delivery.job_id}-${normalized}`;
+      }
+    }
+    // If no driver name but has job_id, use job_id as identifier
+    return `job-${delivery.job_id}`;
+  }
+  
+  // Fallback: Priority list of fields to check for driver identification
   const driverFields = [
-    'collecting_driver', // Priority 1: Collecting Driver from CSV
-    'delivering_driver', // Priority 2: Delivering Driver from CSV  
+    'collecting_driver', // Priority 2: Collecting Driver from CSV
+    'delivering_driver', // Priority 3: Delivering Driver from CSV  
     'driverId',
     'driver_id',
     'courier',
@@ -49,55 +63,66 @@ const extractDriverIdentifier = (delivery: any): string | null => {
     }
   }
   
-  // If no specific driver field found, try to extract from job_id or other composite fields
-  if (delivery.job_id) {
-    const jobId = String(delivery.job_id).toLowerCase();
-    const driverIdMatch = jobId.match(/(?:driver|drv|courier)[_-]?(\w+)/i);
-    if (driverIdMatch) {
-      return normalizeDriverId(`driver_${driverIdMatch[1]}`);
+  // If no specific driver field found, try to extract from job_id patterns
+  if (delivery.job_id && typeof delivery.job_id === 'string') {
+    const jobIdMatch = delivery.job_id.match(/(\w+)-(\w+)/);
+    if (jobIdMatch) {
+      return normalizeDriverId(jobIdMatch[1]);
     }
   }
-
+  
   return null;
 };
 
-export function calculateActiveDrivers(deliveries: any[] = []): number {
-  console.log(`🚀 Calculating active drivers from ${deliveries.length} deliveries...`);
+// Function to extract actual driver name (without job_id prefix)
+const extractDriverName = (delivery: any): string => {
+  const driverName = delivery.collecting_driver || delivery.delivering_driver || delivery.driverName || delivery.driver;
+  if (driverName) {
+    return String(driverName).trim();
+  }
+  
+  if (delivery.job_id) {
+    return `Driver for Job ${delivery.job_id}`;
+  }
+  
+  return 'Unknown Driver';
+};
+
+export const calculateActiveDrivers = (deliveries: any[]): number => {
+  console.log('🚛 Calculating active drivers using unique job_id counting...');
+  console.log(`📊 Processing ${deliveries.length} deliveries`);
   
   if (!deliveries || deliveries.length === 0) {
-    console.log('⚠️ No deliveries provided for active drivers calculation');
+    console.log('❌ No deliveries to process');
     return 0;
   }
 
-  const uniqueDriverIds = new Set<string>();
-  let identificationStats = { found: 0, missing: 0 };
-
+  // Count unique job_ids directly
+  const uniqueJobIds = new Set<string>();
+  
   deliveries.forEach((delivery, index) => {
-    // Extract driver identifier using priority fields (Collecting Driver, Delivering Driver, etc.)
-    const driverIdentifier = extractDriverIdentifier(delivery);
+    const jobId = delivery.job_id;
     
-    if (driverIdentifier) {
-      uniqueDriverIds.add(driverIdentifier);
-      identificationStats.found++;
-      
-      // Log for debugging first few entries
-      if (index < 3) {
-        console.log(`✅ Driver ${index + 1}: "${driverIdentifier}" (from collecting: "${delivery.collecting_driver}", delivering: "${delivery.delivering_driver}")`);
-      }
-    } else {
-      identificationStats.missing++;
-      if (index < 3) {
-        console.log(`⚠️ Delivery ${index + 1}: No driver identifier found`);
-      }
+    if (jobId) {
+      uniqueJobIds.add(String(jobId));
+    }
+    
+    // Log first few for debugging
+    if (index < 5) {
+      console.log(`🔍 Delivery ${index + 1}: Job ID: ${jobId}`);
     }
   });
 
-  console.log(`📊 Driver identification stats:`, identificationStats);
-  console.log(`📊 Unique driver identifiers found: ${uniqueDriverIds.size}`);
-  console.log(`📊 Driver identification rate: ${((identificationStats.found / deliveries.length) * 100).toFixed(1)}%`);
-
-  return uniqueDriverIds.size;
-}
+  const totalUniqueJobs = uniqueJobIds.size;
+  
+  console.log(`📈 Results:`);
+  console.log(`  - Total deliveries: ${deliveries.length}`);
+  console.log(`  - Unique job_ids found: ${totalUniqueJobs}`);
+  console.log(`  - Using unique job_id count for active drivers: ${totalUniqueJobs}`);
+  
+  // Return the count based on unique job_ids
+  return totalUniqueJobs;
+};
 
 export const calculateNewDrivers = (deliveries: any[], days = 30): number => {
   if (deliveries.length === 0) return 0;

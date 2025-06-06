@@ -1,38 +1,62 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { FoxDelivery, GeocodeResult } from "@/types/delivery";
 import { geocodeAddress, batchGeocodeAddresses } from "./geocodingService";
 
 export const uploadDeliveryData = async (deliveries: FoxDelivery[]): Promise<{ success: boolean; error?: string; count?: number }> => {
   try {
+    console.log('🚀 Starting upload to Supabase...');
+    console.log(`📊 Uploading ${deliveries.length} deliveries`);
+    
+    // Log first delivery for debugging
+    if (deliveries.length > 0) {
+      console.log('🔍 Sample delivery data:', {
+        id: deliveries[0].id,
+        job_id: deliveries[0].job_id,
+        collecting_driver: deliveries[0].collecting_driver,
+        delivering_driver: deliveries[0].delivering_driver,
+        status: deliveries[0].status,
+        customer_name: deliveries[0].customer_name
+      });
+    }
+    
     // Insert data in batches of 50 to avoid hitting request size limits
     const batchSize = 50;
     let uploadedCount = 0;
     
     for (let i = 0; i < deliveries.length; i += batchSize) {
       const batch = deliveries.slice(i, i + batchSize);
+      console.log(`📦 Uploading batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(deliveries.length / batchSize)} (${batch.length} records)`);
       
-      const { error } = await supabase
+      const { error, data } = await supabase
         .from('fox_deliveries')
-        .insert(batch);
+        .insert(batch)
+        .select();
       
       if (error) {
-        console.error('Error uploading batch:', error);
+        console.error('❌ Error uploading batch:', error);
+        console.error('🔍 Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
         return { 
           success: false, 
           error: `Error uploading batch ${Math.floor(i / batchSize) + 1}: ${error.message}` 
         };
       }
       
+      console.log(`✅ Batch ${Math.floor(i / batchSize) + 1} uploaded successfully (${data?.length || batch.length} records)`);
       uploadedCount += batch.length;
     }
     
+    console.log(`🎉 Upload completed! Total records uploaded: ${uploadedCount}`);
     return { 
       success: true,
       count: uploadedCount 
     };
   } catch (error) {
-    console.error('Error in uploadDeliveryData:', error);
+    console.error('💥 Unexpected error in uploadDeliveryData:', error);
     return { 
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred' 

@@ -5,12 +5,17 @@ import { dataService } from '@/features/deliveries/services/dataService';
 import type { DeliveryData } from '@/features/deliveries/types';
 import DataImportHeader from '@/components/data-import/DataImportHeader';
 import TabsContainer from '@/components/data-import/TabsContainer';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileSpreadsheet, Upload } from 'lucide-react';
 
 const DataImport: React.FC = () => {
   const { deliveryData: deliveries, loading: isLoading, error, refetch } = useDeliveryData();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(10);
   const { toast } = useToast();
+  
+  // Configure maximum file size (in MB) - can be adjusted based on needs
+  const maxFileSizeMB = 200; // 200MB limit for large datasets
   
   // Add stats for monitoring data quality
   const dataStats = useMemo(() => {
@@ -94,14 +99,30 @@ const DataImport: React.FC = () => {
         dataQuality={dataStats}
       />
       
-      <TabsContainer
-        deliveries={deliveries}
-        isLoading={isLoading}
-        currentPage={currentPage}
-        itemsPerPage={itemsPerPage}
-        setCurrentPage={setCurrentPage}
-        onDataUploaded={handleDataUploaded}
-      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            CSV File Import
+          </CardTitle>
+          <CardDescription>
+            Upload and process CSV/Excel files locally in the browser. 
+            Supports files up to {maxFileSizeMB}MB for large datasets.
+            Perfect for importing delivery data from spreadsheets and other sources.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TabsContainer
+            deliveries={deliveries}
+            isLoading={isLoading}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+            setCurrentPage={setCurrentPage}
+            onDataUploaded={handleDataUploaded}
+            maxFileSizeMB={maxFileSizeMB}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };

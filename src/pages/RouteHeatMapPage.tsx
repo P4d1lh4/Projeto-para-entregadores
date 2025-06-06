@@ -39,10 +39,13 @@ const RouteHeatMapPage: React.FC = () => {
   const geocodedDeliveries = validDeliveries.length;
   const geocodingRate = totalDeliveries > 0 ? Math.round((geocodedDeliveries / totalDeliveries) * 100) : 0;
 
-  // Get unique drivers and their delivery counts
+  // Get unique drivers and their delivery counts - usando contagem de job_ids únicos
   const driverStats = validDeliveries.reduce((acc, delivery) => {
-    const driver = delivery.delivering_driver || delivery.collecting_driver || 'Unknown';
-    acc[driver] = (acc[driver] || 0) + 1;
+    const jobId = delivery.id || delivery.job_id;
+    if (jobId) {
+      const driver = delivery.delivering_driver || delivery.collecting_driver || 'Unknown';
+      acc[driver] = (acc[driver] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>);
 

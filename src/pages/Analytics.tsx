@@ -6,7 +6,7 @@ import type { DeliveryData, DriverData, CustomerData } from '@/lib/file-utils';
 import DeliveryTimelinessCard from '@/components/analytics/DeliveryTimelinessCard';
 import TimeSeriesAnalyticsCard from '@/components/analytics/TimeSeriesAnalyticsCard';
 import RevenueAnalyticsCard from '@/components/analytics/RevenueAnalyticsCard';
-import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Target, AlertCircle, Zap } from 'lucide-react';
+import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Target, AlertCircle, Users } from 'lucide-react';
 
 type AnalyticsProps = {
   deliveryData: DeliveryData[];
@@ -22,44 +22,107 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
     const routeEfficiency = deliveryData.length > 0 ? 
       Math.round((successfulDeliveries / deliveryData.length) * 100) : 0;
 
-    // Peak Hour Performance - Find actual peak hour with correct counting
-    const hourlyDeliveries = deliveryData.reduce((acc, delivery) => {
-      try {
-        // Try to use collected_at first (Fox data), then fallback to deliveryTime
-        const foxDelivery = delivery as any;
-        let dateToUse = delivery.deliveryTime;
+    // Total Drivers - Count unique drivers using job_id and collecting_driver
+    // Avoid duplicates when same driver name has different job_ids
+    const driverNameMap = new Map<string, Set<string>>();
+    
+    // First, let's debug what fields we actually have
+    if (deliveryData.length > 0) {
+      console.log('📊 Sample delivery data structure:');
+      console.log('First delivery keys:', Object.keys(deliveryData[0]));
+      console.log('First delivery sample:', deliveryData[0]);
+      console.log('Second delivery sample:', deliveryData[1]);
+    }
+    
+    deliveryData.forEach((delivery, index) => {
+      const foxDelivery = delivery as any;
+      
+      // Try multiple possible field names for job_id
+      const jobId = foxDelivery.job_id || 
+                   foxDelivery.jobId || 
+                   foxDelivery.Job_ID || 
+                   foxDelivery.id ||
+                   `job_${index}`; // fallback
+      
+      // Try multiple possible field names for driver
+      const collectingDriver = foxDelivery.collecting_driver || 
+                              foxDelivery.Collecting_Driver ||
+                              foxDelivery.collectingDriver ||
+                              foxDelivery.delivering_driver ||
+                              foxDelivery.Delivering_Driver ||
+                              foxDelivery.deliveringDriver ||
+                              foxDelivery.driverName ||
+                              foxDelivery.driver_name ||
+                              foxDelivery.Driver_Name ||
+                              foxDelivery.driver;
+      
+      // Debug log for first few entries
+      if (index < 3) {
+        console.log(`📊 Entry ${index + 1}:`, {
+          jobId,
+          collectingDriver,
+          allKeys: Object.keys(foxDelivery),
+          sample: foxDelivery
+        });
+      }
+      
+      if (jobId && collectingDriver) {
+        // Normalize driver name (trim and lowercase for comparison)
+        const normalizedName = String(collectingDriver).trim().toLowerCase();
         
-        if (foxDelivery.collected_at) {
-          dateToUse = foxDelivery.collected_at;
-        } else if (foxDelivery.created_at) {
-          dateToUse = foxDelivery.created_at;
+        if (!driverNameMap.has(normalizedName)) {
+          driverNameMap.set(normalizedName, new Set());
         }
         
-        const hour = new Date(dateToUse).getHours();
-        acc[hour] = (acc[hour] || 0) + 1;
-      } catch (e) {
-        // Skip invalid dates
-        console.warn('Invalid date in delivery:', delivery);
+        driverNameMap.get(normalizedName)!.add(String(jobId));
       }
-      return acc;
-    }, {} as Record<number, number>);
+    });
     
-    console.log('📊 Peak Hour Analysis Debug:');
+    // Count unique drivers (each unique name counts as 1 driver regardless of job_ids)
+    const totalDrivers = driverNameMap.size;
+    
+    console.log('📊 Driver Counting Debug:');
     console.log('- Total deliveries processed:', deliveryData.length);
-    console.log('- Hourly delivery counts:', hourlyDeliveries);
-    console.log('- Available hours:', Object.keys(hourlyDeliveries));
+    console.log('- Unique driver names found:', totalDrivers);
+    console.log('- Driver name -> job_ids mapping:', 
+      Array.from(driverNameMap.entries()).map(([name, jobIds]) => ({
+        name,
+        jobIds: Array.from(jobIds),
+        jobCount: jobIds.size
+      }))
+    );
     
-    const peakHourData = Object.entries(hourlyDeliveries)
-      .sort(([,a], [,b]) => b - a)[0];
-    
-    const peakHourCount = peakHourData ? peakHourData[1] : 0;
-    const peakHourTime = peakHourData ? `${peakHourData[0]}:00` : 'N/A';
-    
-    console.log('- Peak hour result:', { peakHourCount, peakHourTime });
-    
-    // If no valid peak hour found, show debug info
-    if (!peakHourData || peakHourCount === 0) {
-      console.warn('⚠️ No peak hour data found. Sample delivery data:', deliveryData.slice(0, 3));
+    // If no drivers found, let's fallback to a different approach
+    let fallbackDriverCount = 0;
+    if (totalDrivers === 0) {
+      console.log('⚠️ No drivers found with job_id approach, trying fallback...');
+      
+      const allDriverNames = new Set<string>();
+      deliveryData.forEach((delivery, index) => {
+        const foxDelivery = delivery as any;
+        
+        // Look for any field that might contain driver info
+        const possibleDriverFields = [
+          'collecting_driver', 'Collecting_Driver', 'collectingDriver',
+          'delivering_driver', 'Delivering_Driver', 'deliveringDriver', 
+          'driverName', 'driver_name', 'Driver_Name', 'driver'
+        ];
+        
+        for (const field of possibleDriverFields) {
+          const driverValue = foxDelivery[field];
+          if (driverValue && typeof driverValue === 'string' && driverValue.trim()) {
+            allDriverNames.add(driverValue.trim().toLowerCase());
+            if (index < 3) {
+              console.log(`Found driver in field "${field}":`, driverValue);
+            }
+            break; // Use first valid field found
+          }
+        }
+      });
+      
+      fallbackDriverCount = allDriverNames.size;
+      console.log('📊 Fallback driver count:', fallbackDriverCount);
+      console.log('📊 Driver names found:', Array.from(allDriverNames));
     }
 
     // Customer Retention - Percentage of customers who made repeat orders
@@ -85,8 +148,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
 
     return {
       routeEfficiency,
-      peakHourCount,
-      peakHourTime,
+      totalDrivers: totalDrivers > 0 ? totalDrivers : fallbackDriverCount,
       retentionRate,
       consistencyScore
     };
@@ -129,6 +191,17 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
       {/* Unique Analytics KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
+          title="Total Drivers"
+          value={analyticsMetrics.totalDrivers.toString()}
+          icon={<Users size={20} />}
+          description="Unique drivers by name (job_id + collecting_driver)"
+          trend={{
+            value: analyticsMetrics.totalDrivers,
+            isPositive: analyticsMetrics.totalDrivers > 0
+          }}
+        />
+        
+        <StatCard 
           title="Route Efficiency"
           value={`${analyticsMetrics.routeEfficiency}%`}
           icon={<MapPin size={20} />}
@@ -137,13 +210,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
             value: analyticsMetrics.routeEfficiency > 85 ? 5 : -2,
             isPositive: analyticsMetrics.routeEfficiency > 85
           }}
-        />
-        
-        <StatCard 
-          title="Peak Hour Performance"
-          value={`${analyticsMetrics.peakHourCount} at ${analyticsMetrics.peakHourTime}`}
-          icon={<Zap size={20} />}
-          description="Busiest delivery hour"
         />
         
         <StatCard 

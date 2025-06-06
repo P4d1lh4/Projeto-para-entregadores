@@ -11,9 +11,13 @@ import type { FoxDelivery } from '@/types/delivery';
 
 type DragDropFileUploadProps = {
   onDataUploaded?: (data: FoxDelivery[]) => void;
+  maxFileSizeMB?: number; // Maximum file size in MB
 };
 
-const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded }) => {
+const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ 
+  onDataUploaded, 
+  maxFileSizeMB = 100 // Default 100MB
+}) => {
   const {
     parsedData,
     foxData,
@@ -44,7 +48,11 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({ onDataUploaded 
       </CardHeader>
       <CardContent>
         {parsedData.length === 0 && foxData.length === 0 ? (
-          <UploadArea onFileSelected={handleFile} isProcessing={isProcessing} />
+          <UploadArea 
+            onFileSelected={handleFile} 
+            isProcessing={isProcessing} 
+            maxFileSizeMB={maxFileSizeMB}
+          />
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between">

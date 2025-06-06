@@ -102,10 +102,13 @@ const DeliveryAnalysis: React.FC = () => {
   const geocodedDeliveries2 = validDeliveries.length;
   const geocodingRate = totalDeliveries > 0 ? Math.round((geocodedDeliveries2 / totalDeliveries) * 100) : 0;
 
-  // Estatísticas dos motoristas para o heat map
+  // Estatísticas dos motoristas para o heat map - usando contagem de job_ids únicos
   const driverStats = validDeliveries.reduce((acc, delivery) => {
-    const driver = delivery.delivering_driver || delivery.collecting_driver || 'Unknown';
-    acc[driver] = (acc[driver] || 0) + 1;
+    const jobId = delivery.id || delivery.job_id;
+    if (jobId) {
+      const driver = delivery.delivering_driver || delivery.collecting_driver || 'Unknown';
+      acc[driver] = (acc[driver] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>);
 

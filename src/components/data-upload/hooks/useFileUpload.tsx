@@ -43,6 +43,16 @@ export const useFileUpload = (
       });
       return;
     }
+
+    // Show file info for large files
+    const fileSizeMB = file.size / (1024 * 1024);
+    if (fileSizeMB > 10) {
+      console.log(`📁 Processing large file: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
+      toast({
+        title: 'Processing large file',
+        description: `File size: ${fileSizeMB.toFixed(2)}MB. This may take a moment to process.`,
+      });
+    }
     
     setIsProcessing(true);
     setParsedData([]);

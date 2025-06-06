@@ -1,4 +1,5 @@
 import { generateMockDeliveryData, calculateDriverMetrics, calculateCustomerMetrics, calculateCompanyMetrics } from '@/lib/file-utils';
+import { uploadDeliveryData } from '@/services/deliveryService';
 import type { DeliveryData, DriverData, CustomerData } from '../types';
 import type { FoxDelivery } from '@/types/delivery';
 
@@ -211,6 +212,21 @@ class DataService {
     this.foxDeliveryData = foxData;
     localStorage.setItem('foxOriginalData', JSON.stringify(foxData));
     
+    // Upload to Supabase first
+    console.log('💾 Uploading to Supabase...');
+    try {
+      const uploadResult = await uploadDeliveryData(foxData);
+      if (uploadResult.success) {
+        console.log(`✅ Successfully uploaded ${uploadResult.count} records to Supabase`);
+      } else {
+        console.error('❌ Failed to upload to Supabase:', uploadResult.error);
+        // Continue with local processing even if Supabase upload fails
+      }
+    } catch (error) {
+      console.error('❌ Error uploading to Supabase:', error);
+      // Continue with local processing even if Supabase upload fails
+    }
+    
     // Convert Fox delivery data to our internal format
     const convertedDeliveries = foxData.map((foxDelivery, index) => {
       return {
@@ -236,7 +252,7 @@ class DataService {
     
     this.deliveryData = convertedDeliveries as DeliveryData[];
     
-    // Recalculate driver metrics with the new data
+    // Recalculate driver metrics with the new data - using enhanced driver identification
     this.driverData = calculateDriverMetrics(this.deliveryData);
     console.log(`👥 Recalculated metrics for ${this.driverData.length} drivers`);
     

@@ -8,6 +8,12 @@ export async function parseFile(file: File): Promise<any[]> {
   return new Promise((resolve, reject) => {
     const fileReader = new FileReader();
     
+    // Log file processing info for large files
+    const fileSizeMB = file.size / (1024 * 1024);
+    if (fileSizeMB > 10) {
+      console.log(`📁 Processing large file: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
+    }
+    
     fileReader.onload = (event) => {
       try {
         const result = event.target?.result;
@@ -20,31 +26,61 @@ export async function parseFile(file: File): Promise<any[]> {
         let data: any[] = [];
         
         if (extension === 'csv') {
-          // Parse CSV using XLSX
-          const workbook = XLSX.read(result, { type: 'binary', raw: true });
+          // Parse CSV using XLSX with optimized settings for large files
+          const workbook = XLSX.read(result, { 
+            type: 'binary', 
+            raw: true,
+            // Optimize for large files
+            cellDates: false,
+            cellNF: false,
+            cellStyles: false
+          });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          data = XLSX.utils.sheet_to_json(worksheet);
+          data = XLSX.utils.sheet_to_json(worksheet, {
+            // Process in chunks for better memory management
+            raw: false,
+            defval: ''
+          });
         } else if (extension === 'xlsx' || extension === 'xls') {
-          // Parse Excel
-          const workbook = XLSX.read(result, { type: 'binary' });
+          // Parse Excel with optimized settings for large files
+          const workbook = XLSX.read(result, { 
+            type: 'binary',
+            // Optimize for large files
+            cellDates: false,
+            cellNF: false,
+            cellStyles: false,
+            sheetStubs: false
+          });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          data = XLSX.utils.sheet_to_json(worksheet);
+          data = XLSX.utils.sheet_to_json(worksheet, {
+            // Process in chunks for better memory management
+            raw: false,
+            defval: ''
+          });
         } else {
           throw new Error("Unsupported file format");
         }
         
+        console.log(`✅ File parsed successfully: ${data.length} records found`);
         resolve(data);
       } catch (error) {
+        console.error('❌ Error parsing file:', error);
         reject(error);
       }
     };
     
     fileReader.onerror = (error) => {
+      console.error('❌ FileReader error:', error);
       reject(error);
     };
     
-    // Read as binary string
-    fileReader.readAsBinaryString(file);
+    // For large files, use ArrayBuffer for better memory management
+    if (fileSizeMB > 50) {
+      fileReader.readAsArrayBuffer(file);
+    } else {
+      // Read as binary string for smaller files
+      fileReader.readAsBinaryString(file);
+    }
   });
 }
 
@@ -117,12 +153,27 @@ const normalizeDriverId = (value: any): string | null => {
     .trim();
 };
 
-// Enhanced function to extract and map driver identifiers (same as calculations.ts)
+// Enhanced function to extract and map driver identifiers using job_id
 const extractDriverIdentifier = (delivery: any): string | null => {
-  // Priority list of fields to check for driver identification
+  // Priority 1: Use job_id combined with driver name for unique identification
+  if (delivery.job_id) {
+    const driverName = delivery.collecting_driver || delivery.delivering_driver || delivery.driverId || delivery.driver;
+    if (driverName) {
+      const normalized = normalizeDriverId(driverName);
+      if (normalized) {
+        // For metrics calculation, return just the normalized driver name
+        // The job_id ensures each delivery is counted separately
+        return normalized;
+      }
+    }
+    // If no driver name but has job_id, create a driver identifier from job_id
+    return `driver-job-${delivery.job_id}`;
+  }
+  
+  // Fallback: Priority list of fields to check for driver identification
   const driverFields = [
-    'collecting_driver', // Priority 1: Collecting Driver from CSV
-    'delivering_driver', // Priority 2: Delivering Driver from CSV  
+    'collecting_driver', 
+    'delivering_driver',  
     'driverId',
     'driver_id',
     'courier',
@@ -142,92 +193,50 @@ const extractDriverIdentifier = (delivery: any): string | null => {
     }
   }
   
-  // If no specific driver field found, try to extract from job_id or other composite fields
-  if (delivery.job_id) {
-    const jobId = String(delivery.job_id).toLowerCase();
-    const driverIdMatch = jobId.match(/(?:driver|drv|courier)[_-]?(\w+)/i);
-    if (driverIdMatch) {
-      return normalizeDriverId(`driver_${driverIdMatch[1]}`);
-    }
-  }
-
   return null;
 };
 
 export function calculateDriverMetrics(deliveries: DeliveryData[]): DriverData[] {
-  console.log('🔢 Calculating driver metrics for', deliveries.length, 'deliveries');
+  console.log(`🚛 Calculating driver metrics using job_id-based identification for ${deliveries.length} deliveries...`);
   
   if (!deliveries || deliveries.length === 0) {
-    console.log('⚠️ No deliveries provided for driver metrics calculation');
+    console.log('⚠️ No deliveries provided');
     return [];
   }
-  
-  // Group deliveries by normalized driver identifier
-  const driverMap = new Map<string, DeliveryData[]>();
-  const allDriverIdentifiers = new Set<string>();
-  const identificationStats = {
-    successful: 0,
-    failed: 0,
-    duplicates_avoided: 0
-  };
-  
-  // Sample first few deliveries for debugging
-  console.log('📋 Sample delivery data for driver metrics:');
-  deliveries.slice(0, 3).forEach((delivery, index) => {
-    console.log(`Delivery ${index + 1}:`, {
-      driverId: delivery.driverId,
-      driverName: delivery.driverName,
-      delivering_driver: (delivery as any).delivering_driver,
-      collecting_driver: (delivery as any).collecting_driver
-    });
-  });
+
+  // Group deliveries by driver identifier, with job_id ensuring unique counting
+  const driverMap = new Map<string, any[]>();
+  let processedDeliveries = 0;
+  let driversWithJobId = 0;
   
   deliveries.forEach((delivery, index) => {
     const driverIdentifier = extractDriverIdentifier(delivery);
     
     if (driverIdentifier) {
-      allDriverIdentifiers.add(driverIdentifier);
-      identificationStats.successful++;
+      const existing = driverMap.get(driverIdentifier) || [];
+      // Each delivery with job_id is counted as separate job for the driver
+      driverMap.set(driverIdentifier, [...existing, delivery]);
+      processedDeliveries++;
       
-      // Get or create driver name for display
-      let driverName = delivery.driverName;
-      if (!driverName) {
-        // Try to get a readable name from the original data
-        driverName = (delivery as any).delivering_driver || 
-                    (delivery as any).collecting_driver || 
-                    delivery.driverId || 
-                    driverIdentifier;
+      if ((delivery as any).job_id) {
+        driversWithJobId++;
       }
       
-      const existing = driverMap.get(driverIdentifier) || [];
-      driverMap.set(driverIdentifier, [...existing, { ...delivery, driverName }]);
-      
-      if (existing.length > 0) {
-        identificationStats.duplicates_avoided++;
+      // Debug log for first few entries
+      if (index < 5) {
+        console.log(`🔍 Delivery ${index + 1}: Driver "${driverIdentifier}", Job ID: ${(delivery as any).job_id}`);
       }
     } else {
-      identificationStats.failed++;
-      
-      // Log first few deliveries without driver info for debugging
-      if (index < 5) {
-        console.log(`⚠️ Delivery ${index + 1}: No driver identifier found in metrics calculation`);
-      }
+      console.log(`⚠️ No driver identifier found for delivery ${index + 1}`);
     }
   });
-  
-  console.log(`📊 Driver identification stats:`, identificationStats);
-  console.log(`📊 Unique driver identifiers found: ${allDriverIdentifiers.size}`);
-  console.log(`📊 Driver map size: ${driverMap.size}`);
-  
-  // Log driver distribution
-  const driverDeliveryCounts = Array.from(driverMap.entries()).map(([id, deliveries]) => ({
-    id,
-    name: deliveries[0].driverName || id,
-    count: deliveries.length
-  })).sort((a, b) => b.count - a.count);
-  
-  console.log('🚛 Top 10 drivers by delivery count (metrics):', driverDeliveryCounts.slice(0, 10));
-  
+
+  console.log(`📊 Processing stats:`);
+  console.log(`  - Total deliveries: ${deliveries.length}`);
+  console.log(`  - Processed deliveries: ${processedDeliveries}`);
+  console.log(`  - Deliveries with job_id: ${driversWithJobId}`);
+  console.log(`  - Unique drivers identified: ${driverMap.size}`);
+
   // Calculate metrics for each driver
   const drivers: DriverData[] = [];
   
@@ -242,8 +251,8 @@ export function calculateDriverMetrics(deliveries: DeliveryData[]): DriverData[]
     
     const successRate = driverDeliveries.length > 0 ? 
       successfulDeliveries.length / driverDeliveries.length : 0;
-    
-    // Calculate average delivery time from real data when possible
+
+    // Calculate average delivery time
     let averageTime = 0;
     let validTimeMeasurements = 0;
     

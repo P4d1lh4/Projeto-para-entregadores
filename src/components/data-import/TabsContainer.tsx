@@ -17,6 +17,7 @@ type TabsContainerProps = {
   itemsPerPage: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   onDataUploaded: (data: FoxDelivery[]) => void;
+  maxFileSizeMB?: number; // Maximum file size in MB
 };
 
 const TabsContainer: React.FC<TabsContainerProps> = ({
@@ -25,7 +26,8 @@ const TabsContainer: React.FC<TabsContainerProps> = ({
   currentPage,
   itemsPerPage,
   setCurrentPage,
-  onDataUploaded
+  onDataUploaded,
+  maxFileSizeMB = 100 // Default 100MB
 }) => {
   // Calculate pagination
   const totalPages = Math.ceil(deliveries.length / itemsPerPage);
@@ -50,7 +52,10 @@ const TabsContainer: React.FC<TabsContainerProps> = ({
       </TabsList>
       
       <TabsContent value="upload" className="pt-4">
-        <DragDropFileUpload onDataUploaded={onDataUploaded} />
+        <DragDropFileUpload 
+          onDataUploaded={onDataUploaded} 
+          maxFileSizeMB={maxFileSizeMB}
+        />
       </TabsContent>
       
       <TabsContent value="database" className="pt-4">

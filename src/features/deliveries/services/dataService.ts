@@ -83,62 +83,99 @@ class DataService {
   }
 
   private async loadFromLocalStorage(): Promise<void> {
-    const storedDeliveryData = localStorage.getItem('foxDeliveryData');
-    const storedDriverData = localStorage.getItem('foxDriverData');
-    const storedCustomerData = localStorage.getItem('foxCustomerData');
-    const storedOriginalData = localStorage.getItem('foxOriginalData');
-    
-    if (storedDeliveryData) {
-      try {
-        this.deliveryData = JSON.parse(storedDeliveryData);
-        
-        // Check if we have original XLSX data with company information
-        if (storedOriginalData) {
-          try {
-            this.foxDeliveryData = JSON.parse(storedOriginalData);
-            console.log('📊 Found original XLSX data with company information');
-            
-            // Recalculate company metrics from original data if needed
-            if (storedCustomerData) {
-              this.customerData = JSON.parse(storedCustomerData);
-            } else {
-              console.log('🏢 Recalculating company metrics from XLSX data...');
-              this.customerData = calculateCompanyMetrics(this.foxDeliveryData);
-              localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+    try {
+      const storedDeliveryData = localStorage.getItem('foxDeliveryData');
+      const storedDriverData = localStorage.getItem('foxDriverData');
+      const storedCustomerData = localStorage.getItem('foxCustomerData');
+      const storedOriginalData = localStorage.getItem('foxOriginalData');
+      
+      if (storedDeliveryData) {
+        try {
+          const parsedDeliveryData = JSON.parse(storedDeliveryData);
+          
+          // Validate that parsed data is an array
+          if (Array.isArray(parsedDeliveryData)) {
+            this.deliveryData = parsedDeliveryData;
+          } else {
+            console.warn('⚠️ Invalid delivery data format in localStorage, starting with empty array');
+            this.deliveryData = [];
+          }
+          
+          // Check if we have original XLSX data with company information
+          if (storedOriginalData) {
+            try {
+              const parsedOriginalData = JSON.parse(storedOriginalData);
+              if (Array.isArray(parsedOriginalData)) {
+                this.foxDeliveryData = parsedOriginalData;
+                console.log('📊 Found original XLSX data with company information');
+                
+                // Recalculate company metrics from original data if needed
+                if (storedCustomerData) {
+                  const parsedCustomerData = JSON.parse(storedCustomerData);
+                  if (Array.isArray(parsedCustomerData)) {
+                    this.customerData = parsedCustomerData;
+                  } else {
+                    console.log('🏢 Recalculating company metrics from XLSX data...');
+                    this.customerData = calculateCompanyMetrics(this.foxDeliveryData);
+                    localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+                  }
+                } else {
+                  console.log('🏢 Recalculating company metrics from XLSX data...');
+                  this.customerData = calculateCompanyMetrics(this.foxDeliveryData);
+                  localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+                }
+              } else {
+                console.warn('⚠️ Invalid original data format in localStorage');
+                this.foxDeliveryData = [];
+                this.customerData = calculateCustomerMetrics(this.deliveryData);
+              }
+            } catch (error) {
+              console.warn('⚠️ Error parsing original XLSX data, falling back to regular processing');
+              this.foxDeliveryData = [];
+              this.customerData = calculateCustomerMetrics(this.deliveryData);
             }
-          } catch (error) {
-            console.warn('⚠️ Error parsing original XLSX data, falling back to regular processing');
-            this.foxDeliveryData = [];
+          } else {
+            // No original XLSX data, use regular customer calculation
             this.customerData = calculateCustomerMetrics(this.deliveryData);
           }
-        } else {
-          // No original XLSX data, use regular customer calculation
-          this.customerData = calculateCustomerMetrics(this.deliveryData);
+          
+          // Try to load calculated driver data first, fallback to recalculation
+          if (storedDriverData) {
+            try {
+              const parsedDriverData = JSON.parse(storedDriverData);
+              if (Array.isArray(parsedDriverData)) {
+                this.driverData = parsedDriverData;
+              } else {
+                this.driverData = calculateDriverMetrics(this.deliveryData);
+                localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
+              }
+            } catch (error) {
+              console.warn('⚠️ Error parsing driver data, recalculating...');
+              this.driverData = calculateDriverMetrics(this.deliveryData);
+              localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
+            }
+          } else {
+            this.driverData = calculateDriverMetrics(this.deliveryData);
+            localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
+          }
+          
+          console.log('📥 Loaded data from localStorage');
+          console.log(`- ${this.deliveryData.length} deliveries`);
+          console.log(`- ${this.driverData.length} drivers`);
+          console.log(`- ${this.customerData.length} ${this.foxDeliveryData.length > 0 ? 'companies' : 'customers'}`);
+          
+        } catch (error) {
+          console.error('Error parsing stored data:', error);
+          this.clearAllData(); // Clear inconsistent data
         }
-        
-        // Try to load calculated driver data first, fallback to recalculation
-        if (storedDriverData) {
-          this.driverData = JSON.parse(storedDriverData);
-        } else {
-          this.driverData = calculateDriverMetrics(this.deliveryData);
-          localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
-        }
-        
-        console.log('📥 Loaded data from localStorage');
-        console.log(`- ${this.deliveryData.length} deliveries`);
-        console.log(`- ${this.driverData.length} drivers`);
-        console.log(`- ${this.customerData.length} ${this.foxDeliveryData.length > 0 ? 'companies' : 'customers'}`);
-        
-      } catch (error) {
-        console.error('Error parsing stored data:', error);
-        throw error;
+      } else {
+        // No stored data - start with empty arrays
+        this.clearAllData(false); // Clear only memory, not storage
       }
-    } else {
-      // No stored data - start with empty arrays
-      this.deliveryData = [];
-      this.driverData = [];
-      this.customerData = [];
-      this.foxDeliveryData = [];
+    } catch (error) {
+      console.error('Error in loadFromLocalStorage:', error);
+      // Ensure we have empty arrays on any error
+      this.clearAllData(false);
     }
   }
 
@@ -288,30 +325,38 @@ class DataService {
 
   private generateRatingFromStatus(status?: string): number | undefined {
     if (!status) return undefined;
-    
-    const lowerStatus = status.toLowerCase();
-    if (lowerStatus.includes('delivered') || lowerStatus === 'completed') {
-      return Math.floor(Math.random() * 2) + 4; // 4-5 for successful deliveries
-    }
-    if (lowerStatus.includes('transit') || lowerStatus.includes('collected')) {
-      return Math.floor(Math.random() * 2) + 3; // 3-4 for in progress
-    }
-    
-    return undefined; // No rating for pending/failed deliveries
+    if (status.toLowerCase().includes('success') || status.toLowerCase().includes('delivered')) return 5;
+    if (status.toLowerCase().includes('failed') || status.toLowerCase().includes('cancelled')) return 1;
+    return 3;
   }
 
-  // Method to clear all data
-  clearData(): void {
+  // Clears all data from memory and optionally from localStorage
+  clearAllData(clearStorage: boolean = true): void {
+    console.log(`🧹 Clearing all data... Storage clear: ${clearStorage}`);
+    
+    // Clear all data arrays
     this.deliveryData = [];
     this.driverData = [];
     this.customerData = [];
     this.foxDeliveryData = [];
-    localStorage.removeItem('foxDeliveryData');
-    localStorage.removeItem('foxDriverData');
-    localStorage.removeItem('foxCustomerData');
-    localStorage.removeItem('foxOriginalData');
-    this.isInitialized = false; // Allow re-initialization
-    console.log('🗑️ All data cleared');
+    
+    // Reset initialization flag to ensure clean state
+    this.isInitialized = false;
+    
+    if (clearStorage) {
+      try {
+        localStorage.removeItem('foxDeliveryData');
+        localStorage.removeItem('foxDriverData');
+        localStorage.removeItem('foxCustomerData');
+        localStorage.removeItem('foxOriginalData');
+        console.log('🗑️ LocalStorage cleared successfully.');
+      } catch (error) {
+        console.error('❌ Error clearing localStorage:', error);
+        // Continue execution even if localStorage clearing fails
+      }
+    }
+    
+    console.log('✅ All data cleared successfully');
   }
 
   // Method to regenerate mock data (useful for testing)

@@ -1,4 +1,3 @@
-
 import { parseISO, isValid } from 'date-fns';
 
 /**
@@ -69,98 +68,291 @@ function generateMockTimestamps(delivery: any): { created_at: string; collected_
   };
 }
 
+function calculateCollectionTimeFromColumn(deliveries: any[]) {
+    console.log('🕒 [Collection Time] Iniciando cálculo usando a coluna "Collected Waiting Time"...');
+    
+    const deliveriesWithWaitingTime = deliveries.filter(d => 
+        d.collectedWaitingTime !== undefined && 
+        d.collectedWaitingTime !== null && 
+        !isNaN(d.collectedWaitingTime) &&
+        d.collectedWaitingTime > 0
+    );
+    
+    if (deliveriesWithWaitingTime.length === 0) {
+        console.log('⚠️ [Collection Time] Nenhum dado encontrado na coluna, cálculo de fallback será usado.');
+        return {
+            avgCollectionTime: 0,
+            usedColumn: false,
+            samplesCount: 0
+        };
+    }
+    
+    const totalWaitingTime = deliveriesWithWaitingTime.reduce((sum, d) => sum + d.collectedWaitingTime, 0);
+    const avgCollectionTimeMinutes = totalWaitingTime / deliveriesWithWaitingTime.length;
+    
+    console.log('🕒 [Collection Time] Resultado do cálculo via coluna:', {
+        avgCollectionTimeMinutes: avgCollectionTimeMinutes.toFixed(2),
+        samplesUsed: deliveriesWithWaitingTime.length,
+    });
+    
+    return {
+        avgCollectionTime: avgCollectionTimeMinutes,
+        usedColumn: true,
+        samplesCount: deliveriesWithWaitingTime.length
+    };
+}
+
+function calculateDeliveryTimeFromColumn(deliveries: any[]) {
+    console.log('🕒 [Delivery Time] Iniciando cálculo usando a coluna "Delivered Waiting Time"...');
+    
+    const deliveriesWithWaitingTime = deliveries.filter(d => 
+        d.deliveredWaitingTime !== undefined && 
+        d.deliveredWaitingTime !== null && 
+        !isNaN(d.deliveredWaitingTime) &&
+        d.deliveredWaitingTime > 0
+    );
+    
+    if (deliveriesWithWaitingTime.length === 0) {
+        console.log('⚠️ [Delivery Time] Nenhum dado encontrado na coluna, cálculo de fallback será usado.');
+        return {
+            avgDeliveryTime: 0,
+            usedColumn: false,
+            samplesCount: 0
+        };
+    }
+    
+    const totalWaitingTime = deliveriesWithWaitingTime.reduce((sum, d) => sum + d.deliveredWaitingTime, 0);
+    const avgDeliveryTimeMinutes = totalWaitingTime / deliveriesWithWaitingTime.length;
+    
+    console.log('🕒 [Delivery Time] Resultado do cálculo via coluna:', {
+        avgDeliveryTimeMinutes: avgDeliveryTimeMinutes.toFixed(2),
+        samplesUsed: deliveriesWithWaitingTime.length,
+    });
+    
+    return {
+        avgDeliveryTime: avgDeliveryTimeMinutes,
+        usedColumn: true,
+        samplesCount: deliveriesWithWaitingTime.length
+    };
+}
+
+export function calculateAllTimeMetrics(deliveries: any[]) {
+  console.log('📊 [Time Metrics] Iniciando cálculo de métricas de tempo...');
+  if (!deliveries || deliveries.length === 0) {
+    console.warn('⚠️ Nenhum dado de entrega para calcular métricas.');
+    return {
+        avgCollectionTime: 0,
+        avgDeliveryTime: 0,
+        avgCustomerExperienceTime: 0,
+        avgCollectionTimeFormatted: '00:00:00',
+        avgDeliveryTimeFormatted: '00:00:00',
+        avgCustomerExperienceTimeFormatted: '00:00:00',
+        usedWaitingTimeForCollection: false,
+        collectionTimeMethod: 'N/A',
+        deliveryTimeMethod: 'N/A'
+    };
+  }
+    
+  // Helper function for averaging durations in milliseconds
+  const avgDuration = (durations: number[]): number => {
+    if (durations.length === 0) return 0;
+    const totalMs = durations.reduce((a, b) => a + b, 0);
+    return totalMs / durations.length;
+  };
+
+  // Parse all relevant dates once
+  const parsedDeliveries = deliveries.map(d => ({
+    id: d.id,
+    created_at: parseDate(d.created_at || d.createdAt),
+    collected_at: parseDate(d.collected_at || d.collectedAt),
+    delivered_at: parseDate(d.delivered_at || d.deliveredAt),
+  }));
+
+  // --- TEMPO DE COLETA ---
+  const collectionTimeResult = calculateCollectionTimeFromColumn(deliveries);
+  let avgCollectionTime: number;
+  let avgCollectionMs: number;
+  let collectionTimeMethod: string;
+
+  if (collectionTimeResult.usedColumn) {
+      avgCollectionTime = collectionTimeResult.avgCollectionTime;
+      avgCollectionMs = avgCollectionTime * 60 * 1000;
+      collectionTimeMethod = `Coluna "Collected Waiting Time" (${collectionTimeResult.samplesCount} amostras)`;
+  } else {
+      const collectionDurations = parsedDeliveries
+          .filter(d => d.created_at && d.collected_at)
+          .map(d => d.collected_at!.getTime() - d.created_at!.getTime())
+          .filter(duration => duration >= 0);
+      avgCollectionMs = avgDuration(collectionDurations);
+      avgCollectionTime = avgCollectionMs / 1000 / 60;
+      collectionTimeMethod = `Cálculo (collected_at - created_at) (${collectionDurations.length} amostras)`;
+  }
+
+  // --- TEMPO DE ENTREGA (Prioriza coluna dedicada) ---
+  const deliveryTimeResult = calculateDeliveryTimeFromColumn(deliveries);
+  let avgDeliveryTime: number;
+  let avgDeliveryMs: number;
+  let deliveryTimeMethod: string;
+
+  if (deliveryTimeResult.usedColumn) {
+      avgDeliveryTime = deliveryTimeResult.avgDeliveryTime;
+      avgDeliveryMs = avgDeliveryTime * 60 * 1000;
+      deliveryTimeMethod = `Coluna "Delivered Waiting Time" (${deliveryTimeResult.samplesCount} amostras)`;
+  } else {
+      const deliveryDurations = parsedDeliveries
+          .filter(d => d.collected_at && d.delivered_at)
+          .map(d => d.delivered_at!.getTime() - d.collected_at!.getTime())
+          .filter(duration => duration >= 0);
+      avgDeliveryMs = avgDuration(deliveryDurations);
+      avgDeliveryTime = avgDeliveryMs / 1000 / 60;
+      deliveryTimeMethod = `Cálculo (delivered_at - collected_at) (${deliveryDurations.length} amostras)`;
+  }
+
+  // --- TEMPO TOTAL (Experiência do Cliente) ---
+  const customerExperienceDurations = parsedDeliveries
+      .filter(d => d.created_at && d.delivered_at)
+      .map(d => d.delivered_at!.getTime() - d.created_at!.getTime())
+      .filter(duration => duration >= 0);
+  const avgCustomerExperienceMs = avgDuration(customerExperienceDurations);
+  const avgCustomerExperienceTime = avgCustomerExperienceMs / 1000 / 60;
+
+  console.log('✅ Métricas de Tempo Calculadas:', {
+      collection: `${avgCollectionTime.toFixed(2)} min`,
+      delivery: `${avgDeliveryTime.toFixed(2)} min`,
+      total: `${avgCustomerExperienceTime.toFixed(2)} min`,
+      collectionTimeMethod,
+      deliveryTimeMethod,
+  });
+
+  return {
+      avgCollectionTime,
+      avgDeliveryTime,
+      avgCustomerExperienceTime,
+      avgCollectionTimeFormatted: formatDurationFromMs(avgCollectionMs),
+      avgDeliveryTimeFormatted: formatDurationFromMs(avgDeliveryMs),
+      avgCustomerExperienceTimeFormatted: formatDurationFromMs(avgCustomerExperienceMs),
+      usedWaitingTimeForCollection: collectionTimeResult.usedColumn,
+      collectionTimeMethod,
+      deliveryTimeMethod,
+      usedWaitingTimeForDelivery: deliveryTimeResult.usedColumn,
+  };
+}
+
+/**
+ * Calculates average delivery time using the "Collected Waiting Time" column from CSV.
+ * This function prioritizes the pre-calculated values over timestamp calculations.
+ * @param deliveries The delivery data array, expected to have collectedWaitingTime.
+ * @returns Average delivery time in minutes and formatted string.
+ */
+export function calculateDeliveryTimeFromWaitingColumn(deliveries: any[]) {
+    console.log('🕒 [Collected Waiting Time] Iniciando cálculo usando coluna específica...');
+    
+    // Filtrar entregas que possuem a coluna Collected Waiting Time
+    const deliveriesWithWaitingTime = deliveries.filter(d => 
+        d.collectedWaitingTime !== undefined && 
+        d.collectedWaitingTime !== null && 
+        !isNaN(d.collectedWaitingTime) &&
+        d.collectedWaitingTime > 0
+    );
+    
+    console.log('🕒 [Collected Waiting Time] Dados encontrados:', {
+        totalDeliveries: deliveries.length,
+        deliveriesWithWaitingTime: deliveriesWithWaitingTime.length,
+        sampleValues: deliveriesWithWaitingTime.slice(0, 5).map(d => ({
+            id: d.id,
+            waitingTime: d.collectedWaitingTime
+        }))
+    });
+    
+    if (deliveriesWithWaitingTime.length === 0) {
+        console.log('⚠️ [Collected Waiting Time] Nenhum dado encontrado, usando cálculo de fallback');
+        return {
+            avgDeliveryTime: 0,
+            avgDeliveryTimeFormatted: '00:00:00',
+            usedWaitingTimeColumn: false,
+            samplesCount: 0
+        };
+    }
+    
+    // Calcular a média dos tempos de espera
+    const totalWaitingTime = deliveriesWithWaitingTime.reduce((sum, d) => sum + d.collectedWaitingTime, 0);
+    const avgDeliveryTimeMinutes = totalWaitingTime / deliveriesWithWaitingTime.length;
+    
+    // Converter para milissegundos para usar a função de formatação
+    const avgDeliveryTimeMs = avgDeliveryTimeMinutes * 60 * 1000;
+    const avgDeliveryTimeFormatted = formatDurationFromMs(avgDeliveryTimeMs);
+    
+    console.log('🕒 [Collected Waiting Time] Resultado calculado:', {
+        avgDeliveryTimeMinutes: avgDeliveryTimeMinutes.toFixed(2),
+        avgDeliveryTimeFormatted,
+        samplesUsed: deliveriesWithWaitingTime.length,
+        usedWaitingTimeColumn: true
+    });
+    
+    return {
+        avgDeliveryTime: avgDeliveryTimeMinutes,
+        avgDeliveryTimeFormatted,
+        usedWaitingTimeColumn: true,
+        samplesCount: deliveriesWithWaitingTime.length
+    };
+}
+
 /**
  * Calculates all time-based metrics for a set of deliveries using real timestamps.
- * Uses the correct column names: created_at, collected_at, delivered_at
- * @param deliveries The delivery data array with timestamp columns.
+ * Adopts a functional approach with map/filter/reduce for clarity.
+ * Now prioritizes "Collected Waiting Time" column for delivery time calculation.
+ * @param deliveries The delivery data array, expected to have createdAt, collectedAt, deliveredAt.
  * @returns An object with average times in minutes and formatted strings.
  */
-export function calculateAllTimeMetrics(deliveries: any[]) {
-    console.log('🕒 Processing deliveries for time metrics:', {
-        totalDeliveries: deliveries.length,
-        sampleDelivery: deliveries[0] ? {
-            id: deliveries[0].id,
-            created_at: deliveries[0].created_at,
-            collected_at: deliveries[0].collected_at,
-            delivered_at: deliveries[0].delivered_at,
-            deliveryTime: deliveries[0].deliveryTime
-        } : null
-    });
-
-    const parsedDeliveries = deliveries.map(d => {
-        // First, try to use existing timestamp data
-        let created_at = d.created_at || d.createdAt;
-        let collected_at = d.collected_at || d.collectedAt;
-        let delivered_at = d.delivered_at || d.deliveredAt;
-        
-        // If no real timestamps available, generate mock data for demonstration
-        if (!created_at || !collected_at || !delivered_at || 
-            created_at === 'undefined' || collected_at === 'undefined' || delivered_at === 'undefined') {
-            console.log('🔄 Generating mock timestamps for delivery:', d.id);
-            const mockTimestamps = generateMockTimestamps(d);
-            created_at = mockTimestamps.created_at;
-            collected_at = mockTimestamps.collected_at;
-            delivered_at = mockTimestamps.delivered_at;
-        }
-        
-        return {
-            id: d.id,
-            created_at: parseDate(created_at),
-            collected_at: parseDate(collected_at),
-            delivered_at: parseDate(delivered_at),
-        };
-    });
-
-    const avgDuration = (durations: number[]): number => {
-        if (durations.length === 0) return 0;
-        const totalMs = durations.reduce((a, b) => a + b, 0);
-        return totalMs / durations.length;
-    };
-
-    const collectionDurations = parsedDeliveries
-        .filter(d => d.created_at && d.collected_at)
-        .map(d => d.collected_at!.getTime() - d.created_at!.getTime())
-        .filter(duration => duration >= 0);
-
-    const deliveryDurations = parsedDeliveries
-        .filter(d => d.collected_at && d.delivered_at)
-        .map(d => d.delivered_at!.getTime() - d.collected_at!.getTime())
-        .filter(duration => duration >= 0);
-
-    const customerExperienceDurations = parsedDeliveries
-        .filter(d => d.created_at && d.delivered_at)
-        .map(d => d.delivered_at!.getTime() - d.created_at!.getTime())
-        .filter(duration => duration >= 0);
-
-    const avgCollectionMs = avgDuration(collectionDurations);
-    const avgDeliveryMs = avgDuration(deliveryDurations);
-    const avgCustomerExperienceMs = avgDuration(customerExperienceDurations);
-
-    const avgCollectionTime = avgCollectionMs / 1000 / 60;
-    const avgDeliveryTime = avgDeliveryMs / 1000 / 60;
-    const avgCustomerExperienceTime = avgCustomerExperienceMs / 1000 / 60;
+export function calculateAllTimeMetricsFromWaitingColumn(deliveries: any[]) {
+    console.log('🕒 [Collected Waiting Time] Iniciando cálculo usando coluna específica...');
     
-    console.log('✅ Time Metrics Calculated Successfully:', {
-        avgCollectionTime: `${avgCollectionTime.toFixed(2)} min`,
-        avgDeliveryTime: `${avgDeliveryTime.toFixed(2)} min`,
-        avgCustomerExperienceTime: `${avgCustomerExperienceTime.toFixed(2)} min`,
-        collectionSamples: collectionDurations.length,
-        deliverySamples: deliveryDurations.length,
-        customerExperienceSamples: customerExperienceDurations.length,
-        sampleCalculatedDelivery: parsedDeliveries[0] ? {
-            id: parsedDeliveries[0].id,
-            created_at: parsedDeliveries[0].created_at?.toISOString(),
-            collected_at: parsedDeliveries[0].collected_at?.toISOString(),
-            delivered_at: parsedDeliveries[0].delivered_at?.toISOString()
-        } : null
+    // Filtrar entregas que possuem a coluna Collected Waiting Time
+    const deliveriesWithWaitingTime = deliveries.filter(d => 
+        d.collectedWaitingTime !== undefined && 
+        d.collectedWaitingTime !== null && 
+        !isNaN(d.collectedWaitingTime) &&
+        d.collectedWaitingTime > 0
+    );
+    
+    console.log('🕒 [Collected Waiting Time] Dados encontrados:', {
+        totalDeliveries: deliveries.length,
+        deliveriesWithWaitingTime: deliveriesWithWaitingTime.length,
+        sampleValues: deliveriesWithWaitingTime.slice(0, 5).map(d => ({
+            id: d.id,
+            waitingTime: d.collectedWaitingTime
+        }))
     });
-
+    
+    if (deliveriesWithWaitingTime.length === 0) {
+        console.log('⚠️ [Collected Waiting Time] Nenhum dado encontrado, usando cálculo de fallback');
+        return {
+            avgDeliveryTime: 0,
+            avgDeliveryTimeFormatted: '00:00:00',
+            usedWaitingTimeColumn: false,
+            samplesCount: 0
+        };
+    }
+    
+    // Calcular a média dos tempos de espera
+    const totalWaitingTime = deliveriesWithWaitingTime.reduce((sum, d) => sum + d.collectedWaitingTime, 0);
+    const avgDeliveryTimeMinutes = totalWaitingTime / deliveriesWithWaitingTime.length;
+    
+    // Converter para milissegundos para usar a função de formatação
+    const avgDeliveryTimeMs = avgDeliveryTimeMinutes * 60 * 1000;
+    const avgDeliveryTimeFormatted = formatDurationFromMs(avgDeliveryTimeMs);
+    
+    console.log('🕒 [Collected Waiting Time] Resultado calculado:', {
+        avgDeliveryTimeMinutes: avgDeliveryTimeMinutes.toFixed(2),
+        avgDeliveryTimeFormatted,
+        samplesUsed: deliveriesWithWaitingTime.length,
+        usedWaitingTimeColumn: true
+    });
+    
     return {
-        avgCollectionTime,
-        avgDeliveryTime,
-        avgCustomerExperienceTime,
-        avgCollectionTimeFormatted: formatDurationFromMs(avgCollectionMs),
-        avgDeliveryTimeFormatted: formatDurationFromMs(avgDeliveryMs),
-        avgCustomerExperienceTimeFormatted: formatDurationFromMs(avgCustomerExperienceMs),
+        avgDeliveryTime: avgDeliveryTimeMinutes,
+        avgDeliveryTimeFormatted,
+        usedWaitingTimeColumn: true,
+        samplesCount: deliveriesWithWaitingTime.length
     };
 }

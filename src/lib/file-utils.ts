@@ -286,6 +286,26 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
       });
     }
     
+    // Mapear a coluna "Collected Waiting Time" se disponível
+    const collectedWaitingTime = item['Collected Waiting Time'] || 
+                                 item['collected_waiting_time'] || 
+                                 item.collected_waiting_time ||
+                                 item.collectedWaitingTime ||
+                                 item['Collection Waiting Time'] ||
+                                 item['Waiting Time'] ||
+                                 item.waiting_time;
+    
+    // Log da coluna de tempo de espera para debug
+    if (index < 3 && collectedWaitingTime) {
+      console.log(`🕒 Registro ${index + 1} - Collected Waiting Time encontrado:`, {
+        colunaEncontrada: Object.keys(item).find(key => 
+          key.toLowerCase().includes('collected') && key.toLowerCase().includes('waiting')
+        ),
+        valor: collectedWaitingTime,
+        valorNumerico: parseFloat(collectedWaitingTime)
+      });
+    }
+    
     return {
       id: item.id || item.job_id || `del-${index + 1}`,
       driverId: formattedDriverId,
@@ -302,6 +322,8 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
       createdAt: createdAt.toISOString(),
       collectedAt: collectedAt.toISOString(),
       deliveredAt: deliveredAt ? deliveredAt.toISOString() : undefined,
+      collectedWaitingTime: collectedWaitingTime ? parseFloat(collectedWaitingTime) : undefined,
+      deliveredWaitingTime: item['Delivered Waiting Time'] || item.delivered_waiting_time ? parseFloat(item['Delivered Waiting Time'] || item.delivered_waiting_time) : undefined,
     };
   });
 }

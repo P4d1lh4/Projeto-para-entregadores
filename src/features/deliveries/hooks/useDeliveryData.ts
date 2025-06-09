@@ -11,6 +11,8 @@ export interface UseDeliveryDataResult {
   error: string | null;
   refetch: () => Promise<void>;
   updateData: (newData: any[]) => Promise<void>;
+  setData: (data: { deliveryData: DeliveryData[], driverData: DriverData[], customerData: CustomerData[] }) => void;
+  setError: (error: string | null) => void;
 }
 
 export const useDeliveryData = (): UseDeliveryDataResult => {
@@ -20,15 +22,24 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const setData = (data: { deliveryData: DeliveryData[], driverData: DriverData[], customerData: CustomerData[] }) => {
+    setDeliveryData(data.deliveryData);
+    setDriverData(data.driverData);
+    setCustomerData(data.customerData);
+  };
+
   const fetchFromService = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
+      
       const [deliveryResult, driverResult, customerResult] = await Promise.all([
         dataService.getDeliveryData(),
         dataService.getDriverData(),
         dataService.getCustomerData(),
       ]);
 
+      // Filter out 'No stored data available' errors as they're expected when no data exists
       const errors = [deliveryResult.error, driverResult.error, customerResult.error]
         .filter(Boolean)
         .filter(error => error !== 'No stored data available');
@@ -38,18 +49,27 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
       }
 
       console.log('📊 Fetching from service, setting data:', {
-        deliveries: deliveryResult.data?.length,
-        drivers: driverResult.data?.length,
-        customers: customerResult.data?.length,
+        deliveries: deliveryResult.data?.length || 0,
+        drivers: driverResult.data?.length || 0,
+        customers: customerResult.data?.length || 0,
       });
 
+      // Always set data, even if empty arrays
       setDeliveryData(deliveryResult.data || []);
       setDriverData(driverResult.data || []);
       setCustomerData(customerResult.data || []);
+      
+      // Clear error state on successful fetch
+      setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       console.error('Error fetching data from service:', err);
+      
+      // On error, ensure we have empty arrays instead of null/undefined
+      setDeliveryData([]);
+      setDriverData([]);
+      setCustomerData([]);
     } finally {
       setLoading(false);
     }
@@ -71,41 +91,11 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
     }
   }, [fetchFromService]);
 
-  const initializeData = useCallback(async () => {
-    setLoading(true);
-    // Check if data already exists to avoid overwriting
-    const existingData = await dataService.getDeliveryData();
-    if (existingData.data && existingData.data.length > 0) {
-      console.log('📦 Dados existentes encontrados. Pulando o carregamento estático.');
-      await fetchFromService();
-      return;
-    }
-    
-    // If no data, try to load from static file
-    try {
-      const response = await fetch('/arquivo-csv/export_job_(15)[1] - Worksheet.csv');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const blob = await response.blob();
-      const file = new File([blob], 'export_job_(15)[1] - Worksheet.csv', { type: 'text/csv' });
-      
-      console.log('📄 Carregando dados do arquivo CSV estático...');
-      const parsedResults = await parseFile(file);
-      const formattedData = formatDeliveryData(parsedResults.data);
-      await dataService.updateDeliveryData(formattedData);
-      console.log('✅ Dados do CSV estático carregados e armazenados com sucesso.');
-    } catch (e) {
-      console.warn('⚠️ Não foi possível carregar o CSV estático. Isso é normal se o arquivo não existir.');
-    } finally {
-      // Always fetch from service to populate state
-      await fetchFromService();
-    }
-  }, [fetchFromService]);
-
   useEffect(() => {
-    initializeData();
-  }, [initializeData]);
+    // On initial load, just fetch from the service.
+    // The service itself handles localStorage and initial state.
+    fetchFromService();
+  }, [fetchFromService]);
 
   return {
     deliveryData,
@@ -115,5 +105,7 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
     error,
     refetch: fetchFromService,
     updateData,
+    setData,
+    setError,
   };
 }; 

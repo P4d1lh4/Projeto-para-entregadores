@@ -13,10 +13,11 @@ import DeliveryAnalysis from '@/pages/DeliveryAnalysis';
 import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { dataService } from '@/features/deliveries/services/dataService';
 
 // Main component that orchestrates the layout and routes
 const Index = () => {
-  const { deliveryData, driverData, customerData, loading, error, updateData } = useDeliveryData();
+  const { deliveryData, driverData, customerData, loading, error, updateData, setData, setError } = useDeliveryData();
   
   // Debug logs mais detalhados
   console.log('🏠 INDEX PAGE DEBUG:');
@@ -32,6 +33,33 @@ const Index = () => {
       await updateData(newData);
     } catch (err) {
       console.error('Error in handleDataUploaded:', err);
+    }
+  };
+
+  const handleClearData = async () => {
+    console.log('🔄 User requested data clear. Clearing all data...');
+    try {
+      // Clear the service data first
+      dataService.clearAllData();
+      
+      // Clear any existing error state
+      setError(null);
+      
+      // Force a re-render by updating the state with empty arrays
+      setData({
+        deliveryData: [],
+        driverData: [],
+        customerData: [],
+      });
+      
+      // Wait a small amount to ensure state updates are processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('✅ Data successfully cleared');
+    } catch (error) {
+      console.error('❌ Error clearing data:', error);
+      // Set an error message for the user
+      setError('Erro ao limpar dados. Tente novamente.');
     }
   };
   
@@ -76,7 +104,7 @@ const Index = () => {
   
   return (
     <Routes>
-      <Route path="/" element={<DashboardLayout />}>
+      <Route path="/" element={<DashboardLayout onClearData={handleClearData} />}>
         <Route index element={
           <Dashboard deliveryData={deliveryData} driverData={driverData} />
         } />

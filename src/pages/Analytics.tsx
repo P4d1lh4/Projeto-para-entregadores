@@ -26,34 +26,44 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
       totalDeliveries: deliveryData.length,
       sampleData: deliveryData.slice(0, 3).map(d => ({
         id: d.id,
-        createdAt: d.createdAt,
-        collectedAt: d.collectedAt,
-        deliveredAt: d.deliveredAt,
+        created_at: d.created_at || d.createdAt,
+        collected_at: d.collected_at || d.collectedAt,
+        delivered_at: d.delivered_at || d.deliveredAt,
         status: d.status
       }))
     });
     
-    // Verificar se temos dados válidos de timestamp
+    // Verificar se temos dados válidos de timestamp usando os nomes corretos
     const validTimestamps = deliveryData.filter(d => 
-      d.createdAt && d.collectedAt && d.deliveredAt
+      (d.created_at || d.createdAt) && 
+      (d.collected_at || d.collectedAt) && 
+      (d.delivered_at || d.deliveredAt)
     );
     
-    console.log('🕒 [Analytics] Análise de timestamps:', {
+    console.log('🕒 [Analytics] Análise de timestamps (corrigida):', {
       totalRecords: deliveryData.length,
       recordsWithAllTimestamps: validTimestamps.length,
       percentageValid: deliveryData.length > 0 ? 
         ((validTimestamps.length / deliveryData.length) * 100).toFixed(1) + '%' : '0%',
       exampleValidRecord: validTimestamps.length > 0 ? {
         id: validTimestamps[0].id,
-        created: validTimestamps[0].createdAt,
-        collected: validTimestamps[0].collectedAt,
-        delivered: validTimestamps[0].deliveredAt
-      } : null
+        created_at: validTimestamps[0].created_at || validTimestamps[0].createdAt,
+        collected_at: validTimestamps[0].collected_at || validTimestamps[0].collectedAt,
+        delivered_at: validTimestamps[0].delivered_at || validTimestamps[0].deliveredAt
+      } : null,
+      columnMapping: {
+        found_created_at: deliveryData.filter(d => d.created_at).length,
+        found_collected_at: deliveryData.filter(d => d.collected_at).length,
+        found_delivered_at: deliveryData.filter(d => d.delivered_at).length,
+        found_createdAt: deliveryData.filter(d => d.createdAt).length,
+        found_collectedAt: deliveryData.filter(d => d.collectedAt).length,
+        found_deliveredAt: deliveryData.filter(d => d.deliveredAt).length,
+      }
     });
     
     const result = calculateAllTimeMetrics(deliveryData);
     
-    console.log('🕒 [Analytics] Resultado do timeMetrics:', {
+    console.log('🕒 [Analytics] Resultado do timeMetrics (corrigido):', {
       avgCollectionTime: result.avgCollectionTime,
       avgDeliveryTime: result.avgDeliveryTime,
       avgCustomerExperienceTime: result.avgCustomerExperienceTime,
@@ -135,7 +145,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
       repeatCustomers,
       weeklyTrends
     };
-  }, [deliveryData]);
+  }, [deliveryData, driverData, customerData]);
 
   // Métricas secundárias
   const secondaryMetrics = useMemo(() => {
@@ -569,4 +579,4 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
   );
 };
 
-export default Analytics; 
+export default Analytics;

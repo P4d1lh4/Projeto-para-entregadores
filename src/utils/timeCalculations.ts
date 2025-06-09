@@ -1,3 +1,4 @@
+
 import { parseISO, isValid } from 'date-fns';
 
 /**
@@ -35,15 +36,15 @@ export function formatDurationFromMs(ms: number): string {
 
 /**
  * Calculates all time-based metrics for a set of deliveries using real timestamps.
- * Adopts a functional approach with map/filter/reduce for clarity.
- * @param deliveries The delivery data array, expected to have createdAt, collectedAt, deliveredAt.
+ * Uses the correct column names: created_at, collected_at, delivered_at
+ * @param deliveries The delivery data array with timestamp columns.
  * @returns An object with average times in minutes and formatted strings.
  */
 export function calculateAllTimeMetrics(deliveries: any[]) {
     const parsedDeliveries = deliveries.map(d => ({
-        createdAt: parseDate(d.createdAt),
-        collectedAt: parseDate(d.collectedAt),
-        deliveredAt: parseDate(d.deliveredAt),
+        created_at: parseDate(d.created_at || d.createdAt),
+        collected_at: parseDate(d.collected_at || d.collectedAt),
+        delivered_at: parseDate(d.delivered_at || d.deliveredAt),
     }));
 
     const avgDuration = (durations: number[]): number => {
@@ -51,22 +52,20 @@ export function calculateAllTimeMetrics(deliveries: any[]) {
         const totalMs = durations.reduce((a, b) => a + b, 0);
         return totalMs / durations.length;
     };
-    
-    const msToMinutes = (ms: number) => ms / 1000 / 60;
 
     const collectionDurations = parsedDeliveries
-        .filter(d => d.createdAt && d.collectedAt)
-        .map(d => d.collectedAt!.getTime() - d.createdAt!.getTime())
+        .filter(d => d.created_at && d.collected_at)
+        .map(d => d.collected_at!.getTime() - d.created_at!.getTime())
         .filter(duration => duration >= 0);
 
     const deliveryDurations = parsedDeliveries
-        .filter(d => d.collectedAt && d.deliveredAt)
-        .map(d => d.deliveredAt!.getTime() - d.collectedAt!.getTime())
+        .filter(d => d.collected_at && d.delivered_at)
+        .map(d => d.delivered_at!.getTime() - d.collected_at!.getTime())
         .filter(duration => duration >= 0);
 
     const customerExperienceDurations = parsedDeliveries
-        .filter(d => d.createdAt && d.deliveredAt)
-        .map(d => d.deliveredAt!.getTime() - d.createdAt!.getTime())
+        .filter(d => d.created_at && d.delivered_at)
+        .map(d => d.delivered_at!.getTime() - d.created_at!.getTime())
         .filter(duration => duration >= 0);
 
     const avgCollectionMs = avgDuration(collectionDurations);
@@ -77,13 +76,18 @@ export function calculateAllTimeMetrics(deliveries: any[]) {
     const avgDeliveryTime = avgDeliveryMs / 1000 / 60;
     const avgCustomerExperienceTime = avgCustomerExperienceMs / 1000 / 60;
     
-    console.log('🕒 Real Time Metrics Calculated:', {
+    console.log('🕒 Real Time Metrics Calculated (Fixed):', {
         avgCollectionTime: `${avgCollectionTime.toFixed(2)} min`,
         avgDeliveryTime: `${avgDeliveryTime.toFixed(2)} min`,
         avgCustomerExperienceTime: `${avgCustomerExperienceTime.toFixed(2)} min`,
         collectionSamples: collectionDurations.length,
         deliverySamples: deliveryDurations.length,
-        customerExperienceSamples: customerExperienceDurations.length
+        customerExperienceSamples: customerExperienceDurations.length,
+        sampleData: parsedDeliveries.slice(0, 3).map(d => ({
+            created_at: d.created_at?.toISOString(),
+            collected_at: d.collected_at?.toISOString(),
+            delivered_at: d.delivered_at?.toISOString()
+        }))
     });
 
     return {

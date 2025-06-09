@@ -11,6 +11,10 @@ export interface DeliveryData {
   latitude: number;
   longitude: number;
   rating?: number;
+  // Support both snake_case (from CSV) and camelCase (legacy)
+  created_at?: string;
+  collected_at?: string;
+  delivered_at?: string;
   createdAt?: string;
   collectedAt?: string;
   deliveredAt?: string;
@@ -44,4 +48,4 @@ export interface DeliveryTableProps {
   deliveries: DeliveryData[];
   limit?: number;
   showPagination?: boolean;
-} 
+}

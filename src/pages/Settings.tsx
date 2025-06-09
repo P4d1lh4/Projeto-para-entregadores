@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -314,7 +315,7 @@ const Settings = () => {
                 size="sm" 
                 variant="destructive" 
                 onClick={() => {
-                  dataService.clearData();
+                  dataService.clearAllData();
                   toast({
                     title: 'Data cleared',
                     description: 'All data has been removed. Reload the page to see the changes.',

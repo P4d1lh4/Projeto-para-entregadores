@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
 import { useToast } from '@/hooks/use-toast';
@@ -54,7 +55,7 @@ const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
 
   const handleClearData = async () => {
     try {
-      await dataService.clearData();
+      await dataService.clearAllData();
       await refetch();
       toast({
         title: 'Dados Limpos',
@@ -97,7 +98,6 @@ const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
       <DataImportHeader 
         isLoading={isLoading} 
         onRefresh={handleRefresh} 
-        onClearData={handleClearData}
         recordCount={deliveries.length}
         dataQuality={dataStats}
       />
@@ -141,4 +141,4 @@ const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
   );
 };
 
-export default DataImport; 
+export default DataImport;

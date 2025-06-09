@@ -1,12 +1,17 @@
 import React, { useMemo } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import StatCard from '@/components/dashboard/StatCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer
+} from 'recharts';
+import { 
+  TrendingUp, Clock, Users, XCircle, Timer, ArrowDownCircle, UserCheck, 
+  Calendar, AlertTriangle
+} from 'lucide-react';
 import type { DeliveryData, DriverData, CustomerData } from '@/lib/file-utils';
-import DeliveryTimelinessCard from '@/components/analytics/DeliveryTimelinessCard';
-import TimeSeriesAnalyticsCard from '@/components/analytics/TimeSeriesAnalyticsCard';
-import RevenueAnalyticsCard from '@/components/analytics/RevenueAnalyticsCard';
-import { Calendar, Clock, DollarSign, TrendingUp, MapPin, Target, AlertCircle, Users } from 'lucide-react';
+import StatCard from '@/components/dashboard/StatCard';
+import { calculateAllTimeMetrics } from '@/utils/timeCalculations';
 
 type AnalyticsProps = {
   deliveryData: DeliveryData[];
@@ -15,398 +20,553 @@ type AnalyticsProps = {
 };
 
 const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, customerData }) => {
-  // Calculate unique analytics metrics that don't overlap with driver page or dashboard
-  const analyticsMetrics = useMemo(() => {
-    // Route Efficiency - Percentage of successful deliveries on first attempt
-    const successfulDeliveries = deliveryData.filter(d => d.status === 'delivered').length;
-    const routeEfficiency = deliveryData.length > 0 ? 
-      Math.round((successfulDeliveries / deliveryData.length) * 100) : 0;
 
-    // Total Drivers - Count unique drivers using job_id and collecting_driver
-    // Avoid duplicates when same driver name has different job_ids
-    const driverNameMap = new Map<string, Set<string>>();
+  const timeMetrics = useMemo(() => {
+    console.log('🕒 [Analytics] Calculando timeMetrics com dados:', {
+      totalDeliveries: deliveryData.length,
+      sampleData: deliveryData.slice(0, 3).map(d => ({
+        id: d.id,
+        createdAt: d.createdAt,
+        collectedAt: d.collectedAt,
+        deliveredAt: d.deliveredAt,
+        status: d.status
+      }))
+    });
     
-    // First, let's debug what fields we actually have
-    if (deliveryData.length > 0) {
-      console.log('📊 Sample delivery data structure:');
-      console.log('First delivery keys:', Object.keys(deliveryData[0]));
-      console.log('First delivery sample:', deliveryData[0]);
-      console.log('Second delivery sample:', deliveryData[1]);
-    }
+    // Verificar se temos dados válidos de timestamp
+    const validTimestamps = deliveryData.filter(d => 
+      d.createdAt && d.collectedAt && d.deliveredAt
+    );
     
-    deliveryData.forEach((delivery, index) => {
-      const foxDelivery = delivery as any;
-      
-      // Try multiple possible field names for job_id
-      const jobId = foxDelivery.job_id || 
-                   foxDelivery.jobId || 
-                   foxDelivery.Job_ID || 
-                   foxDelivery.id ||
-                   `job_${index}`; // fallback
-      
-      // Try multiple possible field names for driver
-      const collectingDriver = foxDelivery.collecting_driver || 
-                              foxDelivery.Collecting_Driver ||
-                              foxDelivery.collectingDriver ||
-                              foxDelivery.delivering_driver ||
-                              foxDelivery.Delivering_Driver ||
-                              foxDelivery.deliveringDriver ||
-                              foxDelivery.driverName ||
-                              foxDelivery.driver_name ||
-                              foxDelivery.Driver_Name ||
-                              foxDelivery.driver;
-      
-      // Debug log for first few entries
-      if (index < 3) {
-        console.log(`📊 Entry ${index + 1}:`, {
-          jobId,
-          collectingDriver,
-          allKeys: Object.keys(foxDelivery),
-          sample: foxDelivery
-        });
-      }
-      
-      if (jobId && collectingDriver) {
-        // Normalize driver name (trim and lowercase for comparison)
-        const normalizedName = String(collectingDriver).trim().toLowerCase();
-        
-        if (!driverNameMap.has(normalizedName)) {
-          driverNameMap.set(normalizedName, new Set());
-        }
-        
-        driverNameMap.get(normalizedName)!.add(String(jobId));
+    console.log('🕒 [Analytics] Análise de timestamps:', {
+      totalRecords: deliveryData.length,
+      recordsWithAllTimestamps: validTimestamps.length,
+      percentageValid: deliveryData.length > 0 ? 
+        ((validTimestamps.length / deliveryData.length) * 100).toFixed(1) + '%' : '0%',
+      exampleValidRecord: validTimestamps.length > 0 ? {
+        id: validTimestamps[0].id,
+        created: validTimestamps[0].createdAt,
+        collected: validTimestamps[0].collectedAt,
+        delivered: validTimestamps[0].deliveredAt
+      } : null
+    });
+    
+    const result = calculateAllTimeMetrics(deliveryData);
+    
+    console.log('🕒 [Analytics] Resultado do timeMetrics:', {
+      avgCollectionTime: result.avgCollectionTime,
+      avgDeliveryTime: result.avgDeliveryTime,
+      avgCustomerExperienceTime: result.avgCustomerExperienceTime,
+      formatted: {
+        collection: result.avgCollectionTimeFormatted,
+        delivery: result.avgDeliveryTimeFormatted,
+        total: result.avgCustomerExperienceTimeFormatted
       }
     });
     
-    // Count unique drivers (each unique name counts as 1 driver regardless of job_ids)
-    const totalDrivers = driverNameMap.size;
+    return result;
+  }, [deliveryData]);
+
+  // Calcular métricas operacionais
+  const operationalMetrics = useMemo(() => {
+    console.log('🔄 Calculando métricas operacionais com dados:', {
+      deliveries: deliveryData.length,
+      drivers: driverData.length,
+      customers: customerData.length
+    });
+
+    // Taxa de cancelamento (baseada no status)
+    const canceledDeliveries = deliveryData.filter(d => d.status === 'failed');
+    const cancellationRate = deliveryData.length > 0 ? 
+      Math.round((canceledDeliveries.length / deliveryData.length) * 100) : 0;
+
+    // Taxa de retenção de clientes
+    const customerOrderCounts = new Map<string, number>();
     
-    console.log('📊 Driver Counting Debug:');
-    console.log('- Total deliveries processed:', deliveryData.length);
-    console.log('- Unique driver names found:', totalDrivers);
-    console.log('- Driver name -> job_ids mapping:', 
-      Array.from(driverNameMap.entries()).map(([name, jobIds]) => ({
-        name,
-        jobIds: Array.from(jobIds),
-        jobCount: jobIds.size
-      }))
-    );
+    deliveryData.forEach(delivery => {
+      const customerKey = delivery.customerName || 'unknown';
+      if (customerKey !== 'unknown') {
+        customerOrderCounts.set(customerKey, (customerOrderCounts.get(customerKey) || 0) + 1);
+      }
+    });
+
+    const totalUniqueCustomers = customerOrderCounts.size;
+    const repeatCustomers = Array.from(customerOrderCounts.values()).filter(count => count > 1).length;
+    const retentionRate = totalUniqueCustomers > 0 ? 
+      Math.round((repeatCustomers / totalUniqueCustomers) * 100) : 0;
+
+    // Tendências semanais (últimas 8 semanas)
+    const weeklyData = new Map<string, number>();
+    const now = new Date();
     
-    // If no drivers found, let's fallback to a different approach
-    let fallbackDriverCount = 0;
-    if (totalDrivers === 0) {
-      console.log('⚠️ No drivers found with job_id approach, trying fallback...');
-      
-      const allDriverNames = new Set<string>();
-      deliveryData.forEach((delivery, index) => {
-        const foxDelivery = delivery as any;
-        
-        // Look for any field that might contain driver info
-        const possibleDriverFields = [
-          'collecting_driver', 'Collecting_Driver', 'collectingDriver',
-          'delivering_driver', 'Delivering_Driver', 'deliveringDriver', 
-          'driverName', 'driver_name', 'Driver_Name', 'driver'
-        ];
-        
-        for (const field of possibleDriverFields) {
-          const driverValue = foxDelivery[field];
-          if (driverValue && typeof driverValue === 'string' && driverValue.trim()) {
-            allDriverNames.add(driverValue.trim().toLowerCase());
-            if (index < 3) {
-              console.log(`Found driver in field "${field}":`, driverValue);
-            }
-            break; // Use first valid field found
-          }
-        }
-      });
-      
-      fallbackDriverCount = allDriverNames.size;
-      console.log('📊 Fallback driver count:', fallbackDriverCount);
-      console.log('📊 Driver names found:', Array.from(allDriverNames));
+    // Inicializar todas as semanas com 0
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - (i * 7));
+      const weekKey = `${weekStart.getDate().toString().padStart(2, '0')}/${(weekStart.getMonth() + 1).toString().padStart(2, '0')}`;
+      weeklyData.set(weekKey, 0);
     }
 
-    // Customer Retention - Percentage of customers who made repeat orders
-    const customerOrderCounts = deliveryData.reduce((acc, delivery) => {
-      const customerId = delivery.customerId || delivery.customerName;
-      acc[customerId] = (acc[customerId] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const totalCustomers = Object.keys(customerOrderCounts).length;
-    const repeatCustomers = Object.values(customerOrderCounts).filter(count => count > 1).length;
-    const retentionRate = totalCustomers > 0 ? Math.round((repeatCustomers / totalCustomers) * 100) : 0;
+    deliveryData.forEach(delivery => {
+      if (delivery.deliveryTime) {
+        try {
+          const createdDate = new Date(delivery.deliveryTime);
+          if (!isNaN(createdDate.getTime())) {
+            const weekKey = `${createdDate.getDate().toString().padStart(2, '0')}/${(createdDate.getMonth() + 1).toString().padStart(2, '0')}`;
+            if (weeklyData.has(weekKey)) {
+              weeklyData.set(weekKey, weeklyData.get(weekKey)! + 1);
+            }
+          }
+        } catch (error) {
+          console.warn('Erro ao processar data:', delivery.deliveryTime, error);
+        }
+      }
+    });
 
-    // Service Consistency - On-time delivery rate (percentage of deliveries completed within expected timeframe)
-    const onTimeDeliveries = deliveryData.filter(d => {
-      // Consider a delivery on-time if it's completed successfully
-      // In real scenario, this would compare actual vs expected delivery time
-      return d.status === 'delivered';
-    }).length;
-    
-    const consistencyScore = deliveryData.length > 0 ? 
-      Math.round((onTimeDeliveries / deliveryData.length) * 100) : 0;
+    const weeklyTrends = Array.from(weeklyData.entries()).map(([week, orders]) => ({
+      week,
+      orders
+    }));
 
     return {
-      routeEfficiency,
-      totalDrivers: totalDrivers > 0 ? totalDrivers : fallbackDriverCount,
+      cancellationRate,
       retentionRate,
-      consistencyScore
-    };
-  }, [deliveryData, driverData, customerData]);
-
-  // Calculate revenue metrics in euros
-  const revenueMetrics = useMemo(() => {
-    // Extract revenue from Fox delivery data
-    const totalRevenue = deliveryData.reduce((sum, delivery) => {
-      const foxDelivery = delivery as any;
-      const cost = foxDelivery.cost || 0;
-      return sum + cost;
-    }, 0);
-
-    const avgOrderValue = deliveryData.length > 0 ? totalRevenue / deliveryData.length : 0;
-    
-    // Calculate estimated profit (assuming 20% margin after costs)
-    const estimatedProfit = totalRevenue * 0.20;
-    
-    // Calculate fuel surcharge total (assuming 8% of total cost)
-    const fuelSurcharge = totalRevenue * 0.08;
-
-    return {
-      totalRevenue,
-      avgOrderValue,
-      estimatedProfit,
-      fuelSurcharge
+      totalUniqueCustomers,
+      repeatCustomers,
+      weeklyTrends
     };
   }, [deliveryData]);
 
+  // Métricas secundárias
+  const secondaryMetrics = useMemo(() => {
+    const successfulDeliveries = deliveryData.filter(d => d.status === 'delivered');
+    const successRate = deliveryData.length > 0 ? 
+      Math.round((successfulDeliveries.length / deliveryData.length) * 100) : 0;
+
+    return {
+      successRate,
+      validDeliveries: successfulDeliveries.length
+    };
+  }, [deliveryData]);
+
+  const formatTimeSimple = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${Math.round(minutes)}min`;
+    } else {
+      const hours = Math.floor(minutes / 60);
+      const mins = Math.round(minutes % 60);
+      return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-muted-foreground">Business insights, performance trends and revenue analytics</p>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+            <p className="text-muted-foreground">Indicadores operacionais baseados em dados reais para tomada de decisão</p>
+          </div>
         </div>
-      </div>
-      
-      {/* Unique Analytics KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          title="Total Drivers"
-          value={analyticsMetrics.totalDrivers.toString()}
-          icon={<Users size={20} />}
-          description="Unique drivers by name (job_id + collecting_driver)"
-          trend={{
-            value: analyticsMetrics.totalDrivers,
-            isPositive: analyticsMetrics.totalDrivers > 0
-          }}
-        />
         
-        <StatCard 
-          title="Route Efficiency"
-          value={`${analyticsMetrics.routeEfficiency}%`}
-          icon={<MapPin size={20} />}
-          description="First-attempt delivery success rate"
-          trend={{
-            value: analyticsMetrics.routeEfficiency > 85 ? 5 : -2,
-            isPositive: analyticsMetrics.routeEfficiency > 85
-          }}
-        />
-        
-        <StatCard 
-          title="Customer Retention"
-          value={`${analyticsMetrics.retentionRate}%`}
-          icon={<Target size={20} />}
-          description="Customers with repeat orders"
-          trend={{
-            value: analyticsMetrics.retentionRate,
-            isPositive: analyticsMetrics.retentionRate > 30
-          }}
-        />
-        
-        <StatCard 
-          title="Service Consistency"
-          value={`${analyticsMetrics.consistencyScore}%`}
-          icon={<AlertCircle size={20} />}
-          description="On-time delivery rate"
-          trend={{
-            value: analyticsMetrics.consistencyScore,
-            isPositive: analyticsMetrics.consistencyScore > 90
-          }}
-        />
-      </div>
+        {/* Principais KPIs Operacionais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <StatCard 
+                  title="Taxa de Cancelamento"
+                  value={`${operationalMetrics.cancellationRate}%`}
+                  icon={<XCircle size={20} />}
+                  description="Entregas canceladas vs total"
+                  trend={{
+                    value: operationalMetrics.cancellationRate < 5 ? 5 : -operationalMetrics.cancellationRate,
+                    isPositive: operationalMetrics.cancellationRate < 5
+                  }}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Cálculo: (nº entregas com status 'failed') / (total entregas) × 100</p>
+              <p>Meta ideal: &lt; 5%</p>
+            </TooltipContent>
+          </Tooltip>
 
-      {/* Simplified Tabs - Only Revenue, Trends, and Timeliness */}
-      <Tabs defaultValue="revenue" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="revenue" className="flex gap-2 items-center">
-            <DollarSign className="h-4 w-4" /> Revenue Analytics
-          </TabsTrigger>
-          <TabsTrigger value="trends" className="flex gap-2 items-center">
-            <TrendingUp className="h-4 w-4" /> Performance Trends
-          </TabsTrigger>
-          <TabsTrigger value="timeliness" className="flex gap-2 items-center">
-            <Clock className="h-4 w-4" /> Delivery Timeliness
-          </TabsTrigger>
-        </TabsList>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <StatCard 
+                  title="Tempo Médio de Coleta"
+                  value={timeMetrics.avgCollectionTimeFormatted}
+                  icon={<Timer size={20} />}
+                  description="Tempo de pedido à coleta"
+                  trend={{
+                    value: timeMetrics.avgCollectionTime < 60 ? 5 : -2,
+                    isPositive: timeMetrics.avgCollectionTime < 60
+                  }}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Cálculo: Collected Date/Time - Created Date/Time</p>
+              <p>Meta ideal: &lt; 1 hora</p>
+            </TooltipContent>
+          </Tooltip>
 
-        {/* Revenue Tab */}
-        <TabsContent value="revenue" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
-            <RevenueAnalyticsCard deliveries={deliveryData} className="col-span-1" />
-            
-            {/* Additional Revenue Insights */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <StatCard 
+                  title="Tempo Médio de Entrega"
+                  value={timeMetrics.avgDeliveryTimeFormatted}
+                  icon={<ArrowDownCircle size={20} />}
+                  description="Tempo da coleta à entrega"
+                  trend={{
+                    value: timeMetrics.avgDeliveryTime < 45 ? 5 : -2,
+                    isPositive: timeMetrics.avgDeliveryTime < 45
+                  }}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p><strong>Cálculo:</strong> delivered_at - collected_at</p>
+              <p><strong>Descrição:</strong> Tempo entre a coleta pelo motorista e a entrega final</p>
+              <p><strong>Fonte:</strong> Colunas collected_at e delivered_at do arquivo importado</p>
+              <p><strong>Meta ideal:</strong> &lt; 45 minutos</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <StatCard 
+                  title="Retenção de Clientes"
+                  value={`${operationalMetrics.retentionRate}%`}
+                  icon={<UserCheck size={20} />}
+                  description={`${operationalMetrics.repeatCustomers} de ${operationalMetrics.totalUniqueCustomers} clientes`}
+                  trend={{
+                    value: operationalMetrics.retentionRate > 30 ? operationalMetrics.retentionRate : -5,
+                    isPositive: operationalMetrics.retentionRate > 30
+                  }}
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Cálculo: (clientes com mais de 1 pedido) / (total clientes únicos) × 100</p>
+              <p>Baseado em 'Customer Name'</p>
+              <p>Meta ideal: &gt; 30%</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* KPIs Secundários */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <StatCard 
+            title="Taxa de Sucesso"
+            value={`${secondaryMetrics.successRate}%`}
+            icon={<TrendingUp size={20} />}
+            description="Entregas bem-sucedidas"
+            trend={{
+              value: secondaryMetrics.successRate,
+              isPositive: secondaryMetrics.successRate > 90
+            }}
+          />
+          
+          <StatCard 
+            title="Tempo Médio Total"
+            value={timeMetrics.avgCustomerExperienceTimeFormatted}
+            icon={<Clock size={20} />}
+            description="Experiência completa do cliente"
+            trend={{
+              value: timeMetrics.avgCustomerExperienceTime < 120 ? 5 : -2,
+              isPositive: timeMetrics.avgCustomerExperienceTime < 120
+            }}
+          />
+
+          <StatCard 
+            title="Total de Entregas"
+            value={deliveryData.length.toString()}
+            icon={<Users size={20} />}
+            description="Volume total processado"
+            trend={{
+              value: deliveryData.length,
+              isPositive: deliveryData.length > 0
+            }}
+          />
+        </div>
+
+        {/* Tabs com análises detalhadas */}
+        <Tabs defaultValue="trends" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="trends" className="flex gap-2 items-center">
+              <TrendingUp className="h-4 w-4" /> Tendências Semanais
+            </TabsTrigger>
+            <TabsTrigger value="performance" className="flex gap-2 items-center">
+              <AlertTriangle className="h-4 w-4" /> Performance Operacional
+            </TabsTrigger>
+            <TabsTrigger value="customers" className="flex gap-2 items-center">
+              <Users className="h-4 w-4" /> Análise de Clientes
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tendências Tab */}
+          <TabsContent value="trends" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Revenue Analysis (EUR)
+                  <Calendar className="h-5 w-5" />
+                  Tendência Semanal de Pedidos (Últimas 8 Semanas)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      €{revenueMetrics.totalRevenue.toLocaleString('en-IE', { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Total Revenue</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      €{revenueMetrics.estimatedProfit.toLocaleString('en-IE', { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Estimated Profit (20% margin)</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      €{revenueMetrics.avgOrderValue.toLocaleString('en-IE', { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Average Order Value</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      €{revenueMetrics.fuelSurcharge.toLocaleString('en-IE', { minimumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Fuel Surcharge (8%)</div>
-                  </div>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={operationalMetrics.weeklyTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis 
+                        dataKey="week" 
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis />
+                      <RechartsTooltip 
+                        formatter={(value, name) => [value, 'Pedidos']}
+                        labelFormatter={(label) => `Semana: ${label}`}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="orders" 
+                        stroke="#2563eb" 
+                        strokeWidth={3}
+                        dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-                
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">Revenue Calculation Methodology</h4>
+                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                  <h4 className="font-semibold text-blue-800 mb-2">Insights da Tendência</h4>
                   <div className="text-sm text-blue-700 space-y-1">
-                    <p>• <strong>Total Revenue:</strong> Sum of all delivery costs from uploaded data</p>
-                    <p>• <strong>Estimated Profit:</strong> 20% margin after operational costs (fuel, maintenance, insurance)</p>
-                    <p>• <strong>Fuel Surcharge:</strong> 8% of total revenue to cover fuel costs</p>
-                    <p>• <strong>Currency:</strong> All values displayed in Euros (€)</p>
+                    <p>• Dados baseados na coluna 'Delivery Time' dos arquivos carregados</p>
+                    <p>• Inclui <strong>todos os dias da semana</strong> (não apenas segunda-feira)</p>
+                    <p>• Use esta tendência para planejar recursos e capacidade operacional</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        {/* Trends Tab */}
-        <TabsContent value="trends" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
-            <TimeSeriesAnalyticsCard deliveries={deliveryData} className="col-span-1" />
-            
-            {/* Business Growth Metrics */}
+          {/* Performance Tab */}
+          <TabsContent value="performance" className="space-y-6">
+            {/* Seção informativa sobre cálculo de tempo de entrega */}
+            <Card className="border-blue-200 bg-blue-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-800">
+                  <ArrowDownCircle className="h-5 w-5" />
+                  📊 Cálculo de Tempo Médio de Entrega
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-blue-700">Fórmula:</span>
+                    <code className="bg-white px-2 py-1 rounded border">
+                      Tempo de Entrega = delivered_at - collected_at
+                    </code>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="font-semibold text-blue-700 mt-0.5">Descrição:</span>
+                    <div className="text-blue-600">
+                      <p>Calcula o tempo entre o momento em que o motorista coleta o item (<strong>collected_at</strong>) até a entrega final ao cliente (<strong>delivered_at</strong>).</p>
+                      <p className="mt-1">Este é um indicador crítico de eficiência logística, incluindo tempo de trânsito, localização do endereço e processo de entrega.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-blue-700">Resultado Atual:</span>
+                    <span className="font-bold text-blue-800 text-lg">
+                      {timeMetrics.avgDeliveryTimeFormatted}
+                    </span>
+                    <span className="text-blue-600">
+                      ({formatTimeSimple(timeMetrics.avgDeliveryTime)})
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Timer className="h-5 w-5" />
+                    Tempos Operacionais Detalhados
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center p-3 border rounded-lg bg-orange-50">
+                      <div>
+                        <div className="font-medium">Tempo Médio de Coleta</div>
+                        <div className="text-sm text-muted-foreground">
+                          {timeMetrics.avgCollectionTimeFormatted}
+                        </div>
+                      </div>
+                      <div className="text-orange-600 font-bold text-lg">
+                        {formatTimeSimple(timeMetrics.avgCollectionTime)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 border rounded-lg bg-blue-50">
+                      <div>
+                        <div className="font-medium">Tempo Médio de Entrega</div>
+                        <div className="text-sm text-muted-foreground">
+                          {timeMetrics.avgDeliveryTimeFormatted}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          ⏱️ collected_at → delivered_at
+                        </div>
+                      </div>
+                      <div className="text-blue-600 font-bold text-lg">
+                        {formatTimeSimple(timeMetrics.avgDeliveryTime)}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center p-3 border rounded-lg bg-green-50">
+                      <div>
+                        <div className="font-medium">Tempo Total Médio</div>
+                        <div className="text-sm text-muted-foreground">
+                          {timeMetrics.avgCustomerExperienceTimeFormatted}
+                        </div>
+                      </div>
+                      <div className="text-green-600 font-bold text-lg">
+                        {formatTimeSimple(timeMetrics.avgCustomerExperienceTime)}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Indicadores de Alerta
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className={`p-3 border rounded-lg ${
+                      operationalMetrics.cancellationRate > 5 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                    }`}>
+                      <div className={`font-medium ${
+                        operationalMetrics.cancellationRate > 5 ? 'text-red-800' : 'text-green-800'
+                      }`}>
+                        Taxa de Cancelamento {operationalMetrics.cancellationRate > 5 ? 'Alta' : 'Normal'}
+                      </div>
+                      <div className={`text-sm ${
+                        operationalMetrics.cancellationRate > 5 ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        {operationalMetrics.cancellationRate}% {operationalMetrics.cancellationRate > 5 ? '(acima da meta de 5%)' : '(dentro da meta)'}
+                      </div>
+                    </div>
+
+                    <div className={`p-3 border rounded-lg ${
+                      timeMetrics.avgCollectionTime > 60 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200'
+                    }`}>
+                      <div className={`font-medium ${
+                        timeMetrics.avgCollectionTime > 60 ? 'text-yellow-800' : 'text-green-800'
+                      }`}>
+                        Tempo de Coleta {timeMetrics.avgCollectionTime > 60 ? 'Elevado' : 'Eficiente'}
+                      </div>
+                      <div className={`text-sm ${
+                        timeMetrics.avgCollectionTime > 60 ? 'text-yellow-600' : 'text-green-600'
+                      }`}>
+                        {formatTimeSimple(timeMetrics.avgCollectionTime)} {timeMetrics.avgCollectionTime > 60 ? '(revisar processos)' : '(boa performance)'}
+                      </div>
+                    </div>
+
+                    <div className={`p-3 border rounded-lg ${
+                      timeMetrics.avgDeliveryTime > 45 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                    }`}>
+                      <div className={`font-medium ${
+                        timeMetrics.avgDeliveryTime > 45 ? 'text-red-800' : 'text-green-800'
+                      }`}>
+                        Tempo de Entrega {timeMetrics.avgDeliveryTime > 45 ? 'Lento' : 'Rápido'}
+                      </div>
+                      <div className={`text-sm ${
+                        timeMetrics.avgDeliveryTime > 45 ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        {formatTimeSimple(timeMetrics.avgDeliveryTime)} {timeMetrics.avgDeliveryTime > 45 ? '(melhorar rotas)' : '(excelente performance)'}
+                      </div>
+                    </div>
+
+                    <div className={`p-3 border rounded-lg ${
+                      operationalMetrics.retentionRate < 30 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'
+                    }`}>
+                      <div className={`font-medium ${
+                        operationalMetrics.retentionRate < 30 ? 'text-red-800' : 'text-green-800'
+                      }`}>
+                        Retenção {operationalMetrics.retentionRate < 30 ? 'Baixa' : 'Saudável'}
+                      </div>
+                      <div className={`text-sm ${
+                        operationalMetrics.retentionRate < 30 ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        {operationalMetrics.retentionRate}% {operationalMetrics.retentionRate < 30 ? '(focar em fidelização)' : '(boa base de clientes)'}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Customers Tab */}
+          <TabsContent value="customers" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Delivery Volume Trends
+                  <Users className="h-5 w-5" />
+                  Análise de Base de Clientes
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{deliveryData.length}</div>
-                    <div className="text-sm text-muted-foreground">Total Deliveries</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {deliveryData.filter(d => d.status === 'delivered').length}
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {operationalMetrics.totalUniqueCustomers}
                     </div>
-                    <div className="text-sm text-muted-foreground">Completed Deliveries</div>
+                    <div className="text-sm text-muted-foreground">Clientes Únicos</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {Math.round((deliveryData.length / 30) * 10) / 10}
+                  
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-3xl font-bold text-green-600">
+                      {operationalMetrics.repeatCustomers}
                     </div>
-                    <div className="text-sm text-muted-foreground">Average per Day</div>
+                    <div className="text-sm text-muted-foreground">Clientes Recorrentes</div>
+                  </div>
+                  
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-3xl font-bold text-purple-600">
+                      {operationalMetrics.totalUniqueCustomers - operationalMetrics.repeatCustomers}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Clientes Únicos</div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
 
-        {/* Timeliness Tab */}
-        <TabsContent value="timeliness" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
-            <DeliveryTimelinessCard deliveries={deliveryData} className="col-span-1" />
-            
-            {/* Time-based Performance Analysis */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Time Performance Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold mb-3">Delivery Windows</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <div className="font-medium">Morning (6AM-12PM)</div>
-                          <div className="text-sm text-muted-foreground">High efficiency window</div>
-                        </div>
-                        <div className="text-green-600 font-semibold">92% on-time</div>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <div className="font-medium">Afternoon (12PM-6PM)</div>
-                          <div className="text-sm text-muted-foreground">Peak volume period</div>
-                        </div>
-                        <div className="text-yellow-600 font-semibold">85% on-time</div>
-                      </div>
-                      <div className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <div className="font-medium">Evening (6PM-10PM)</div>
-                          <div className="text-sm text-muted-foreground">Rush hour challenges</div>
-                        </div>
-                        <div className="text-orange-600 font-semibold">78% on-time</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold mb-3">Performance Recommendations</h4>
-                    <div className="space-y-3">
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="font-medium text-blue-800">Optimize Route Planning</div>
-                        <div className="text-sm text-blue-600">Schedule complex deliveries during morning hours</div>
-                      </div>
-                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="font-medium text-green-800">Maintain Peak Performance</div>
-                        <div className="text-sm text-green-600">Current consistency score: {analyticsMetrics.consistencyScore}%</div>
-                      </div>
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="font-medium text-yellow-800">Evening Efficiency</div>
-                        <div className="text-sm text-yellow-600">Consider additional drivers for rush hours</div>
-                      </div>
-                    </div>
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2">Insights de Retenção</h4>
+                  <div className="text-sm text-green-700 space-y-1">
+                    <p>• Taxa de retenção: <strong>{operationalMetrics.retentionRate}%</strong></p>
+                    <p>• Clientes que fizeram múltiplos pedidos representam uma base sólida</p>
+                    <p>• {operationalMetrics.retentionRate > 30 ? 'Excelente' : 'Oportunidade de'} desempenho em fidelização</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </TooltipProvider>
   );
 };
 
-export default Analytics;
+export default Analytics; 

@@ -11,6 +11,9 @@ export interface DeliveryData {
   latitude: number;
   longitude: number;
   rating?: number;
+  createdAt?: string;
+  collectedAt?: string;
+  deliveredAt?: string;
 }
 
 export interface DriverData {

@@ -7,13 +7,14 @@ import Deliveries from '@/pages/Deliveries';
 import Companies from '@/pages/Companies';
 import Settings from '@/pages/Settings';
 import DataImport from '@/pages/DataImport';
-import Analytics from '@/pages/Analytics';
+import Analytics from './Analytics';
 import AIAssistantPage from '@/pages/AIAssistantPage';
 import DeliveryAnalysis from '@/pages/DeliveryAnalysis';
 import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle } from 'lucide-react';
 
+// Main component that orchestrates the layout and routes
 const Index = () => {
   const { deliveryData, driverData, customerData, loading, error, updateData } = useDeliveryData();
   
@@ -30,11 +31,11 @@ const Index = () => {
     try {
       await updateData(newData);
     } catch (err) {
-      console.error('Error uploading data:', err);
+      console.error('Error in handleDataUploaded:', err);
     }
   };
   
-  if (loading) {
+  if (loading && deliveryData.length === 0) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Card className="w-96">
@@ -84,7 +85,7 @@ const Index = () => {
         <Route path="customers" element={<Companies customerData={customerData} />} />
         <Route path="analytics" element={<Analytics deliveryData={deliveryData} driverData={driverData} customerData={customerData} />} />
         <Route path="ai-assistant" element={<AIAssistantPage />} />
-        <Route path="data-import" element={<DataImport />} />
+        <Route path="data-import" element={<DataImport onDataUploaded={handleDataUploaded} />} />
         <Route path="settings" element={<Settings />} />
         <Route path="delivery-analysis" element={<DeliveryAnalysis />} />
       </Route>

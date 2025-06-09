@@ -4,7 +4,7 @@ import type { DeliveryData, DriverData, CustomerData } from '../types';
 import type { FoxDelivery } from '@/types/delivery';
 
 // Configuration for data source
-const USE_MOCK_DATA = true; // Temporarily enable to test filters
+const USE_MOCK_DATA = false; // Temporarily enable to test filters
 
 export interface DataServiceResult<T> {
   data: T | null;
@@ -229,10 +229,13 @@ class DataService {
     
     // Convert Fox delivery data to our internal format
     const convertedDeliveries = foxData.map((foxDelivery, index) => {
+      // Use the same driver identification logic as CSV processing
+      const driverName = foxDelivery.delivering_driver || foxDelivery.collecting_driver;
+      
       return {
         id: foxDelivery.job_id || foxDelivery.id || `fox-${index + 1}`,
-        driverId: foxDelivery.delivering_driver || foxDelivery.collecting_driver || `driver-${index % 10}`,
-        driverName: foxDelivery.delivering_driver || foxDelivery.collecting_driver || `Driver ${index % 10}`,
+        driverId: driverName || `driver-${index % 10}`,
+        driverName: driverName || `Driver ${index % 10}`,
         customerId: foxDelivery.customer_name || `customer-${index}`,
         customerName: foxDelivery.customer_name || foxDelivery.pickup_customer_name || foxDelivery.delivery_customer_name || 'Unknown Customer',
         address: foxDelivery.delivery_address || foxDelivery.pickup_address || 'Unknown Address',
@@ -242,11 +245,15 @@ class DataService {
         latitude: foxDelivery.delivery_lat || 53.349805,
         longitude: foxDelivery.delivery_lng || -6.26031,
         rating: this.generateRatingFromStatus(foxDelivery.status),
-        // Preserve original Fox data for accurate calculations
+        // Preserve original Fox data for accurate calculations and consistent driver identification
+        job_id: foxDelivery.job_id,
         collected_at: foxDelivery.collected_at,
         delivered_at: foxDelivery.delivered_at,
         delivering_driver: foxDelivery.delivering_driver,
         collecting_driver: foxDelivery.collecting_driver,
+        cost: foxDelivery.cost,
+        // Preserve all driver-related fields for consistent extraction
+        driver: foxDelivery.delivering_driver || foxDelivery.collecting_driver,
       };
     });
     

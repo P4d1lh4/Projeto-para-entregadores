@@ -1,18 +1,42 @@
 import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
 import type { DeliveryData, DriverData, CustomerData } from '@/features/deliveries/types';
 
 // Re-export types for backward compatibility
 export type { DeliveryData, DriverData, CustomerData };
 
-export async function parseFile(file: File): Promise<any[]> {
+export async function parseFile(file: File): Promise<{ data: any[] }> {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  
+  // Log file processing info for large files
+  const fileSizeMB = file.size / (1024 * 1024);
+  if (fileSizeMB > 10) {
+    console.log(`📁 Processing large file: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
+  }
+
+  // Use PapaParse for streaming CSV files
+  if (extension === 'csv') {
+    return new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        worker: true, // Use a web worker to avoid blocking the main thread
+        header: true, // Automatically infer headers from the first row
+        dynamicTyping: true, // Automatically convert numerics and booleans
+        skipEmptyLines: true,
+        complete: (results) => {
+          console.log(`✅ CSV file parsed successfully with PapaParse: ${results.data.length} records found`);
+          resolve({ data: results.data as any[] });
+        },
+        error: (error: any) => {
+          console.error('❌ Error parsing CSV file with PapaParse:', error);
+          reject(error);
+        },
+      });
+    });
+  }
+  
+  // Use XLSX for Excel files (with previous optimizations)
   return new Promise((resolve, reject) => {
     const fileReader = new FileReader();
-    
-    // Log file processing info for large files
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > 10) {
-      console.log(`📁 Processing large file: ${file.name} (${fileSizeMB.toFixed(2)}MB)`);
-    }
     
     fileReader.onload = (event) => {
       try {
@@ -21,31 +45,12 @@ export async function parseFile(file: File): Promise<any[]> {
           throw new Error("Failed to read file");
         }
         
-        const extension = file.name.split('.').pop()?.toLowerCase();
-        
         let data: any[] = [];
         
-        if (extension === 'csv') {
-          // Parse CSV using XLSX with optimized settings for large files
-          const workbook = XLSX.read(result, { 
-            type: 'binary', 
-            raw: true,
-            // Optimize for large files
-            cellDates: false,
-            cellNF: false,
-            cellStyles: false
-          });
-          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-          data = XLSX.utils.sheet_to_json(worksheet, {
-            // Process in chunks for better memory management
-            raw: false,
-            defval: ''
-          });
-        } else if (extension === 'xlsx' || extension === 'xls') {
+        if (extension === 'xlsx' || extension === 'xls') {
           // Parse Excel with optimized settings for large files
           const workbook = XLSX.read(result, { 
             type: 'binary',
-            // Optimize for large files
             cellDates: false,
             cellNF: false,
             cellStyles: false,
@@ -53,7 +58,6 @@ export async function parseFile(file: File): Promise<any[]> {
           });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           data = XLSX.utils.sheet_to_json(worksheet, {
-            // Process in chunks for better memory management
             raw: false,
             defval: ''
           });
@@ -61,8 +65,8 @@ export async function parseFile(file: File): Promise<any[]> {
           throw new Error("Unsupported file format");
         }
         
-        console.log(`✅ File parsed successfully: ${data.length} records found`);
-        resolve(data);
+        console.log(`✅ ${extension?.toUpperCase()} file parsed successfully: ${data.length} records found`);
+        resolve({ data });
       } catch (error) {
         console.error('❌ Error parsing file:', error);
         reject(error);
@@ -78,15 +82,77 @@ export async function parseFile(file: File): Promise<any[]> {
     if (fileSizeMB > 50) {
       fileReader.readAsArrayBuffer(file);
     } else {
-      // Read as binary string for smaller files
       fileReader.readAsBinaryString(file);
     }
   });
 }
 
+// Função auxiliar para detectar automaticamente as colunas de timestamp
+function detectTimestampColumns(data: any[]): {
+  createdAtColumn: string | null;
+  collectedAtColumn: string | null;
+  deliveredAtColumn: string | null;
+} {
+  if (!data || data.length === 0) {
+    return { createdAtColumn: null, collectedAtColumn: null, deliveredAtColumn: null };
+  }
+
+  const sampleItem = data[0];
+  const columns = Object.keys(sampleItem);
+  
+  // Palavras-chave para cada tipo de timestamp
+  const createdKeywords = ['created', 'creation', 'order', 'started', 'begin'];
+  const collectedKeywords = ['collected', 'collection', 'pickup', 'picked', 'fetch'];
+  const deliveredKeywords = ['delivered', 'delivery', 'completed', 'finished', 'end'];
+  
+  const findColumn = (keywords: string[], description: string) => {
+    const found = columns.find(col => {
+      const normalizedCol = col.toLowerCase().replace(/[^a-z]/g, '');
+      return keywords.some(keyword => normalizedCol.includes(keyword));
+    }) || null;
+    
+    console.log(`🔍 Buscando coluna para ${description}:`, {
+      keywords,
+      availableColumns: columns,
+      normalizedColumns: columns.map(col => col.toLowerCase().replace(/[^a-z]/g, '')),
+      foundColumn: found
+    });
+    
+    return found;
+  };
+
+  const result = {
+    createdAtColumn: findColumn(createdKeywords, 'created_at'),
+    collectedAtColumn: findColumn(collectedKeywords, 'collected_at'),
+    deliveredAtColumn: findColumn(deliveredKeywords, 'delivered_at')
+  };
+
+  console.log('🔍 Detecção automática de colunas de timestamp:', result);
+  return result;
+}
+
 export function formatDeliveryData(data: any[]): DeliveryData[] {
   console.log('🔄 Formatting delivery data with enhanced validation...');
   
+  // Safety check: ensure data is an array
+  if (!Array.isArray(data)) {
+    console.error('❌ formatDeliveryData received non-array data:', typeof data, data);
+    return [];
+  }
+  
+  if (data.length === 0) {
+    console.warn('⚠️ formatDeliveryData received empty array');
+    return [];
+  }
+  
+  // Detectar automaticamente as colunas de timestamp
+  const detectedColumns = detectTimestampColumns(data);
+  console.log('📊 Colunas detectadas:', {
+    totalRegistros: data.length,
+    colunasDetectadas: detectedColumns,
+    amostrarColunas: Object.keys(data[0]).slice(0, 10)
+  });
+
   // First apply enhanced validation and cleaning
   const { cleanedData, validationReport } = validateExcelDriverData(data);
   
@@ -119,6 +185,107 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
     const formattedDriverId = driverIdentifier || item.driver_id || item.driverId || `drv-${index % 10 + 1}`;
     const formattedDriverName = item.driverName || item.driver_name || item.delivering_driver || item.collecting_driver || `Driver ${index % 10 + 1}`;
     
+    // --- Timestamp Processing ---
+    const now = new Date();
+    
+    // Helper to validate and parse date fields
+    const parseAndValidate = (dateValue: any): Date | null => {
+      if (!dateValue) return null;
+      const date = new Date(dateValue);
+      return isNaN(date.getTime()) ? null : date;
+    };
+    
+    // 1. Created At - usar coluna detectada como prioridade, depois fallback para busca manual
+    let createdAt = parseAndValidate(
+      (detectedColumns.createdAtColumn ? item[detectedColumns.createdAtColumn] : null) ||
+      item['Created Date/Time'] || 
+      item.created_at || 
+      item['created_at'] ||
+      item.createdAt ||
+      item['Creation Date'] ||
+      item['Order Date'] ||
+      item.order_date ||
+      item['Date Created'] ||
+      item.date_created ||
+      item['Created At'] ||
+      item['Created'] ||
+      item.created
+    );
+    if (!createdAt) {
+      createdAt = new Date(now);
+      createdAt.setHours(now.getHours() - Math.floor(Math.random() * 24)); // fallback to a random time in the last 24h
+    }
+    
+    // 2. Collected At - usar coluna detectada como prioridade, depois fallback para busca manual
+    let collectedAt = parseAndValidate(
+      (detectedColumns.collectedAtColumn ? item[detectedColumns.collectedAtColumn] : null) ||
+      item['Collected Date/Time'] || 
+      item.collected_at || 
+      item['collected_at'] ||
+      item.collectedAt ||
+      item['Collection Date'] ||
+      item['Pickup Date'] ||
+      item.pickup_date ||
+      item['Date Collected'] ||
+      item.date_collected ||
+      item['Collected At'] ||
+      item['Collected'] ||
+      item.collected ||
+      item.pickup_at ||
+      item['Pickup At']
+    );
+    if (!collectedAt) {
+      collectedAt = new Date(createdAt);
+      collectedAt.setMinutes(createdAt.getMinutes() + 15 + Math.floor(Math.random() * 45)); // 15-60 min after creation
+    }
+    
+    // 3. Delivered At - usar coluna detectada como prioridade, depois fallback para busca manual
+    let deliveredAt = parseAndValidate(
+      (detectedColumns.deliveredAtColumn ? item[detectedColumns.deliveredAtColumn] : null) ||
+      item['Delivered Date/Time'] || 
+      item.delivered_at || 
+      item['delivered_at'] ||
+      item.deliveredAt ||
+      item['Delivery Date'] ||
+      item.delivery_date ||
+      item['Date Delivered'] ||
+      item.date_delivered ||
+      item['Delivered At'] ||
+      item['Delivered'] ||
+      item.delivered ||
+      item.delivery_time ||
+      item['Delivery Time']
+    );
+    if (!deliveredAt && (item.status === 'delivered' || defaultStatus === 'delivered')) {
+      deliveredAt = new Date(collectedAt);
+      deliveredAt.setMinutes(collectedAt.getMinutes() + 20 + Math.floor(Math.random() * 70)); // 20-90 min after collection
+    }
+    
+    // Log de debug para verificar o mapeamento das colunas (apenas para os primeiros registros)
+    if (index < 3) {
+      console.log(`🔍 Registro ${index + 1} - Mapeamento de timestamps:`, {
+        colunasDetectadas: detectedColumns,
+        colunasOriginais: Object.keys(item).filter(key => 
+          key.toLowerCase().includes('created') || 
+          key.toLowerCase().includes('collected') || 
+          key.toLowerCase().includes('delivered') ||
+          key.toLowerCase().includes('date') ||
+          key.toLowerCase().includes('time') ||
+          key.toLowerCase().includes('pickup')
+        ),
+        valoresOriginais: {
+          created: detectedColumns.createdAtColumn ? item[detectedColumns.createdAtColumn] : 'N/A',
+          collected: detectedColumns.collectedAtColumn ? item[detectedColumns.collectedAtColumn] : 'N/A',
+          delivered: detectedColumns.deliveredAtColumn ? item[detectedColumns.deliveredAtColumn] : 'N/A'
+        },
+        timestampsProcessados: {
+          createdAt: createdAt?.toISOString(),
+          collectedAt: collectedAt?.toISOString(),
+          deliveredAt: deliveredAt?.toISOString()
+        }
+      });
+    }
+    
     return {
       id: item.id || item.job_id || `del-${index + 1}`,
       driverId: formattedDriverId,
@@ -128,10 +295,13 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
       address: item.address || item.pickup_address || item.delivery_address || `${index + 1} Main St`,
       city: item.city || 'Dublin',
       status: item.status || defaultStatus,
-      deliveryTime: item.delivery_time || item.deliveryTime || item.created_at || new Date().toISOString(),
+      deliveryTime: item.delivery_time || item.deliveryTime || createdAt.toISOString(),
       latitude: parseFloat(item.latitude) || parseFloat(item.lat) || (53.33 + (Math.random() - 0.5) / 10),
       longitude: parseFloat(item.longitude) || parseFloat(item.lng) || (-6.25 + (Math.random() - 0.5) / 10),
       rating: item.rating ? parseFloat(item.rating) : Math.floor(Math.random() * 5) + 1,
+      createdAt: createdAt.toISOString(),
+      collectedAt: collectedAt.toISOString(),
+      deliveredAt: deliveredAt ? deliveredAt.toISOString() : undefined,
     };
   });
 }
@@ -486,6 +656,35 @@ export function validateExcelDriverData(rawData: any[]): {
   };
 } {
   console.log('🔍 Validating Excel driver data consistency...');
+  
+  // Safety check: ensure rawData is an array
+  if (!Array.isArray(rawData)) {
+    console.error('❌ validateExcelDriverData received non-array data:', typeof rawData, rawData);
+    return {
+      cleanedData: [],
+      driverMapping: {},
+      validationReport: {
+        totalRecords: 0,
+        recordsWithDrivers: 0,
+        uniqueDrivers: 0,
+        dataQualityIssues: ['Input data is not an array']
+      }
+    };
+  }
+  
+  if (rawData.length === 0) {
+    console.warn('⚠️ validateExcelDriverData received empty array');
+    return {
+      cleanedData: [],
+      driverMapping: {},
+      validationReport: {
+        totalRecords: 0,
+        recordsWithDrivers: 0,
+        uniqueDrivers: 0,
+        dataQualityIssues: ['Input data is empty']
+      }
+    };
+  }
   
   const cleanedData: any[] = [];
   const driverMapping: { [key: string]: string } = {};

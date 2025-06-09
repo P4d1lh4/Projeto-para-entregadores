@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { dataService, type DataServiceResult } from '../services/dataService';
+import { useState, useEffect, useCallback } from 'react';
+import { dataService } from '../services/dataService';
 import type { DeliveryData, DriverData, CustomerData } from '../types';
 import { parseFile, formatDeliveryData } from '@/lib/file-utils';
 
@@ -10,7 +10,7 @@ export interface UseDeliveryDataResult {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  updateData: (newData: DeliveryData[]) => Promise<void>;
+  updateData: (newData: any[]) => Promise<void>;
 }
 
 export const useDeliveryData = (): UseDeliveryDataResult => {
@@ -20,47 +20,28 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchFromService = useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
-
-      // Try to load data from the static CSV first
-      try {
-        const response = await fetch('/arquivo-csv/export_job_(15)[1] - Worksheet.csv');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const blob = await response.blob();
-        const file = new File([blob], 'export_job_(15)[1] - Worksheet.csv', { type: 'text/csv' });
-        
-        console.log('📄 Loading data from static CSV file...');
-        const parsedData = await parseFile(file);
-        const formattedData = formatDeliveryData(parsedData);
-        await dataService.updateDeliveryData(formattedData);
-        console.log('✅ Static CSV data loaded and stored successfully.');
-      } catch (e) {
-        console.warn('⚠️ Could not load static CSV. This is normal if the file does not exist. Falling back to stored data.', e);
-      }
-
       const [deliveryResult, driverResult, customerResult] = await Promise.all([
         dataService.getDeliveryData(),
         dataService.getDriverData(),
         dataService.getCustomerData(),
       ]);
 
-      // Only show errors if they're not related to empty data
-      const hasRealErrors = [deliveryResult.error, driverResult.error, customerResult.error]
+      const errors = [deliveryResult.error, driverResult.error, customerResult.error]
         .filter(Boolean)
-        .some(error => error !== 'No stored data available');
+        .filter(error => error !== 'No stored data available');
       
-      if (hasRealErrors) {
-        const errors = [deliveryResult.error, driverResult.error, customerResult.error]
-          .filter(Boolean)
-          .filter(error => error !== 'No stored data available')
-          .join(', ');
-        if (errors) throw new Error(errors);
+      if (errors.length > 0) {
+        throw new Error(errors.join(', '));
       }
+
+      console.log('📊 Fetching from service, setting data:', {
+        deliveries: deliveryResult.data?.length,
+        drivers: driverResult.data?.length,
+        customers: customerResult.data?.length,
+      });
 
       setDeliveryData(deliveryResult.data || []);
       setDriverData(driverResult.data || []);
@@ -68,26 +49,63 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      console.error('Error fetching delivery data:', err);
+      console.error('Error fetching data from service:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const updateData = async (newData: DeliveryData[]) => {
+  }, []);
+  
+  const updateData = useCallback(async (newData: any[]) => {
     try {
-      await dataService.updateDeliveryData(newData);
-      await fetchData(); // Refresh all data
+      setLoading(true);
+      const formattedData = formatDeliveryData(newData);
+      await dataService.updateDeliveryData(formattedData);
+      // After updating, refetch all data to ensure consistency
+      await fetchFromService();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error updating data';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update data';
       setError(errorMessage);
-      console.error('Error updating delivery data:', err);
+      console.error('Error updating data:', err);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [fetchFromService]);
+
+  const initializeData = useCallback(async () => {
+    setLoading(true);
+    // Check if data already exists to avoid overwriting
+    const existingData = await dataService.getDeliveryData();
+    if (existingData.data && existingData.data.length > 0) {
+      console.log('📦 Dados existentes encontrados. Pulando o carregamento estático.');
+      await fetchFromService();
+      return;
+    }
+    
+    // If no data, try to load from static file
+    try {
+      const response = await fetch('/arquivo-csv/export_job_(15)[1] - Worksheet.csv');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const file = new File([blob], 'export_job_(15)[1] - Worksheet.csv', { type: 'text/csv' });
+      
+      console.log('📄 Carregando dados do arquivo CSV estático...');
+      const parsedResults = await parseFile(file);
+      const formattedData = formatDeliveryData(parsedResults.data);
+      await dataService.updateDeliveryData(formattedData);
+      console.log('✅ Dados do CSV estático carregados e armazenados com sucesso.');
+    } catch (e) {
+      console.warn('⚠️ Não foi possível carregar o CSV estático. Isso é normal se o arquivo não existir.');
+    } finally {
+      // Always fetch from service to populate state
+      await fetchFromService();
+    }
+  }, [fetchFromService]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    initializeData();
+  }, [initializeData]);
 
   return {
     deliveryData,
@@ -95,7 +113,7 @@ export const useDeliveryData = (): UseDeliveryDataResult => {
     customerData,
     loading,
     error,
-    refetch: fetchData,
+    refetch: fetchFromService,
     updateData,
   };
 }; 

@@ -4,11 +4,18 @@ import { useToast } from '@/hooks/use-toast';
 import { dataService } from '@/features/deliveries/services/dataService';
 import type { DeliveryData } from '@/features/deliveries/types';
 import DataImportHeader from '@/components/data-import/DataImportHeader';
-import TabsContainer from '@/components/data-import/TabsContainer';
+import DragDropFileUpload from '@/components/data-upload/DragDropFileUpload';
+import DeliveryTable from '@/components/data-import/DeliveryTable';
+import EmptyState from '@/components/data-import/EmptyState';
+import LoadingState from '@/components/data-import/LoadingState';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileSpreadsheet, Upload } from 'lucide-react';
+import { DatabaseIcon } from 'lucide-react';
 
-const DataImport: React.FC = () => {
+interface DataImportProps {
+  onDataUploaded?: (data: any[]) => void;
+}
+
+const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
   const { deliveryData: deliveries, loading: isLoading, error, refetch } = useDeliveryData();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(10);
@@ -24,10 +31,10 @@ const DataImport: React.FC = () => {
     }
     
     // Count records with all critical fields filled
-    const criticalFields = ['id', 'customerName', 'address', 'status'];
+    const criticalFields: (keyof DeliveryData)[] = ['id', 'customerName', 'address', 'status'];
     
     const complete = deliveries.filter(delivery => 
-      criticalFields.every(field => delivery[field as keyof DeliveryData])
+      criticalFields.every(field => delivery[field])
     ).length;
     
     return {
@@ -38,59 +45,55 @@ const DataImport: React.FC = () => {
   }, [deliveries]);
   
   const handleRefresh = async () => {
-    try {
-      await refetch();
-      toast({
-        title: 'Data refreshed',
-        description: `Loaded ${deliveries.length} delivery records`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to refresh data',
-        variant: 'destructive',
-      });
-    }
+    await refetch();
+    toast({
+      title: 'Dados atualizados',
+      description: `Foram carregados ${deliveries.length} registros de entrega.`,
+    });
   };
 
   const handleClearData = async () => {
     try {
-      dataService.clearData();
+      await dataService.clearData();
       await refetch();
       toast({
-        title: 'Data cleared',
-        description: 'All delivery data has been removed',
+        title: 'Dados Limpos',
+        description: 'Todos os dados de entrega foram removidos do sistema.',
       });
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to clear data',
+        title: 'Erro ao Limpar',
+        description: 'Não foi possível limpar os dados.',
         variant: 'destructive',
       });
     }
   };
   
-  const handleDataUploaded = async (data: DeliveryData[]) => {
-    try {
-      // The data will be handled by the dataService
+  const handleFileUploadSuccess = async (uploadedData: DeliveryData[]) => {
+    // A lógica de salvar os dados agora é responsabilidade do componente pai,
+    // que tem acesso ao 'updateData' do hook.
+    if (onDataUploaded) {
+      onDataUploaded(uploadedData);
+    } else {
+      // Fallback: se nenhuma função for passada, apenas busca os dados novamente.
+      // Isso pode não refletir imediatamente os dados novos se a atualização for assíncrona.
       await refetch();
-      setCurrentPage(1);
-      
-      toast({
-        title: 'Data uploaded',
-        description: `Successfully uploaded ${data.length} records`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to upload data',
-        variant: 'destructive',
-      });
     }
+    
+    setCurrentPage(1); // Reseta a paginação para a primeira página
+    
+    toast({
+      title: 'Upload Concluído',
+      description: `O sistema foi atualizado com ${uploadedData.length} novos registros.`,
+    });
   };
   
+  const totalPages = Math.ceil(deliveries.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
   return (
-    <div className="container mx-auto p-4 py-6 space-y-6 max-w-7xl">
+    <div className="container mx-auto p-4 py-6 space-y-8 max-w-7xl">
       <DataImportHeader 
         isLoading={isLoading} 
         onRefresh={handleRefresh} 
@@ -99,28 +102,39 @@ const DataImport: React.FC = () => {
         dataQuality={dataStats}
       />
       
+      <DragDropFileUpload 
+        onDataUploaded={handleFileUploadSuccess}
+        maxFileSizeMB={maxFileSizeMB}
+      />
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            CSV File Import
+            <DatabaseIcon className="h-5 w-5" />
+            Dados Atuais no Sistema
           </CardTitle>
           <CardDescription>
-            Upload and process CSV/Excel files locally in the browser. 
-            Supports files up to {maxFileSizeMB}MB for large datasets.
-            Perfect for importing delivery data from spreadsheets and other sources.
+            {deliveries.length > 0
+              ? `Exibindo ${deliveries.length} registros de entrega. Utilize a importação acima para adicionar ou substituir dados.`
+              : 'Nenhum dado carregado. Importe um arquivo para começar.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TabsContainer
-            deliveries={deliveries}
-            isLoading={isLoading}
-            currentPage={currentPage}
-            itemsPerPage={itemsPerPage}
-            setCurrentPage={setCurrentPage}
-            onDataUploaded={handleDataUploaded}
-            maxFileSizeMB={maxFileSizeMB}
-          />
+          {isLoading ? (
+            <LoadingState />
+          ) : deliveries.length > 0 ? (
+            <DeliveryTable 
+              deliveries={deliveries}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              setCurrentPage={setCurrentPage}
+              isLoading={isLoading}
+            />
+          ) : (
+            <EmptyState />
+          )}
         </CardContent>
       </Card>
     </div>

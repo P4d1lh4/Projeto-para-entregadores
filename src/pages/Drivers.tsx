@@ -49,7 +49,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
   // Use prop data if available, otherwise hook data
   const fallbackDrivers = propDriverData && propDriverData.length > 0 ? propDriverData : hookDriverData;
   
-  // Enhanced driver processing - extract drivers based 100% on job_id
+  // Enhanced driver processing - simplified to use driver name as the unique key
   const enhancedDrivers = useMemo(() => {
     if (!deliveryData || deliveryData.length === 0) {
       // Fallback to basic driver data if no delivery data available
@@ -70,62 +70,24 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
       }));
     }
 
-    // Extract drivers - avoid duplicates when same driver name has different job_ids
-    const driverNameMap = new Map<string, Set<string>>(); // name -> job_ids
-    const driverMap = new Map<string, EnhancedDriverData>(); // unique driver key -> data
+    const driverMap = new Map<string, EnhancedDriverData>(); // driver name -> data
 
-    // First pass: map driver names to job_ids to identify duplicates
     deliveryData.forEach(delivery => {
-      const jobId = (delivery as any).job_id || delivery.id;
-      const collectingDriver = (delivery as any).delivering_driver || 
-                              (delivery as any).collecting_driver ||
-                              delivery.driverName;
-      
-      if (jobId && collectingDriver) {
-        const normalizedName = String(collectingDriver).trim().toLowerCase();
-        
-        if (!driverNameMap.has(normalizedName)) {
-          driverNameMap.set(normalizedName, new Set());
-        }
-        
-        driverNameMap.get(normalizedName)!.add(String(jobId));
-      }
-    });
-
-    console.log('📊 Driver deduplication mapping:', 
-      Array.from(driverNameMap.entries()).map(([name, jobIds]) => ({
-        name,
-        jobIds: Array.from(jobIds),
-        jobCount: jobIds.size
-      }))
-    );
-
-    // Second pass: create driver data using the first job_id as unique key for each driver name
-    deliveryData.forEach(delivery => {
-      const jobId = (delivery as any).job_id || delivery.id;
       const driverDisplayName = (delivery as any).delivering_driver || 
                                (delivery as any).collecting_driver ||
-                               delivery.driverName ||
-                               `Driver-${jobId}`;
+                               delivery.driverName;
 
-      if (!jobId) {
-        console.warn('Delivery without job_id found, skipping:', delivery);
+      if (!driverDisplayName) {
+        console.warn('Delivery without a driver name, skipping:', delivery);
         return;
       }
 
-      const normalizedName = String(driverDisplayName).trim().toLowerCase();
+      const normalizedName = String(driverDisplayName).trim();
       
-      // Find the primary job_id for this driver name (use the first one encountered)
-      const jobIds = driverNameMap.get(normalizedName);
-      if (!jobIds) return;
-      
-      const primaryJobId = Array.from(jobIds).sort()[0]; // Use first job_id alphabetically as primary key
-      const driverKey = `${normalizedName}_${primaryJobId}`;
-      
-      if (!driverMap.has(driverKey)) {
-        driverMap.set(driverKey, {
-          id: driverKey,
-          name: driverDisplayName,
+      if (!driverMap.has(normalizedName)) {
+        driverMap.set(normalizedName, {
+          id: normalizedName,
+          name: normalizedName,
           totalDeliveries: 0,
           successfulDeliveries: 0,
           failedDeliveries: 0,
@@ -140,7 +102,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
         });
       }
 
-      const driver = driverMap.get(driverKey)!;
+      const driver = driverMap.get(normalizedName)!;
       driver.deliveries.push(delivery);
       driver.totalDeliveries++;
 

@@ -1,0 +1,6 @@
+id,job_id,driver,created_at,collected_at,delivered_at,status,customer_name,address
+1,FOX001,João Silva,2024-01-15 09:00:00,2024-01-15 09:30:00,2024-01-15 10:15:00,delivered,Maria Santos,Rua A 123
+2,FOX002,Pedro Costa,2024-01-15 10:00:00,2024-01-15 10:20:00,2024-01-15 11:05:00,delivered,João Oliveira,Rua B 456
+3,FOX003,Ana Ferreira,2024-01-15 11:00:00,2024-01-15 11:25:00,2024-01-15 12:10:00,delivered,Carlos Lima,Rua C 789
+4,FOX004,Ricardo Mendes,2024-01-15 12:00:00,2024-01-15 12:15:00,,pending,Lucia Rocha,Rua D 101
+5,FOX005,Sandra Alves,2024-01-15 13:00:00,2024-01-15 13:35:00,2024-01-15 14:20:00,delivered,Paulo Martins,Rua E 202 

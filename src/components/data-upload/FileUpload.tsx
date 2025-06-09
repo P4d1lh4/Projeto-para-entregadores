@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,8 +33,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ onDataUploaded }) => {
     setIsUploading(true);
     
     try {
-      const parsedData = await parseFile(file);
-      const formattedData = formatDeliveryData(parsedData);
+      const parsedResult = await parseFile(file);
+      const formattedData = formatDeliveryData(parsedResult.data);
       
       onDataUploaded(formattedData);
       

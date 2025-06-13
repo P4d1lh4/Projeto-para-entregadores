@@ -18,8 +18,8 @@ export interface DeliveryData {
   createdAt?: string;
   collectedAt?: string;
   deliveredAt?: string;
-  collectedWaitingTime?: number; // Tempo em minutos da coluna "Collected Waiting Time"
-  deliveredWaitingTime?: number; // Campo específico para tempo de entrega (em minutos)
+  collectedWaitingTime?: string | number; // Aceita HH:mm:ss (string) ou minutos (number)
+  deliveredWaitingTime?: string | number; // Aceita HH:mm:ss (string) ou minutos (number)
 }
 
 export interface DriverData {

@@ -1,5 +1,6 @@
 import { generateMockDeliveryData, calculateDriverMetrics, calculateCustomerMetrics, calculateCompanyMetrics } from '@/lib/file-utils';
 import { uploadDeliveryData } from '@/services/deliveryService';
+import { StorageUtils } from '@/utils/storageUtils';
 import type { DeliveryData, DriverData, CustomerData } from '../types';
 import type { FoxDelivery } from '@/types/delivery';
 
@@ -32,20 +33,21 @@ class DataService {
 
     try {
       if (USE_MOCK_DATA) {
-        // First try to load from localStorage
-        const storedDeliveryData = localStorage.getItem('foxDeliveryData');
-        const storedDriverData = localStorage.getItem('foxDriverData');
-        const storedCustomerData = localStorage.getItem('foxCustomerData');
+        // First try to load from storage
+        const storedDeliveryData = StorageUtils.getLargeItem('foxDeliveryData');
+        const storedDriverData = StorageUtils.getLargeItem('foxDriverData');
+        const storedCustomerData = StorageUtils.getLargeItem('foxCustomerData');
         
         if (storedDeliveryData && storedDriverData && storedCustomerData) {
-          console.log('📥 Loading existing data from localStorage...');
+          console.log('📥 Loading existing data from storage...');
           try {
-            this.deliveryData = JSON.parse(storedDeliveryData);
-            this.driverData = JSON.parse(storedDriverData);
-            this.customerData = JSON.parse(storedCustomerData);
-            console.log('✅ Loaded from localStorage:', this.deliveryData.length, 'deliveries,', this.driverData.length, 'drivers,', this.customerData.length, 'customers');
-          } catch (parseError) {
-            console.warn('⚠️ Error parsing stored data, generating new mock data...');
+            // Data is already parsed by StorageUtils
+            this.deliveryData = storedDeliveryData;
+            this.driverData = storedDriverData;
+            this.customerData = storedCustomerData;
+            console.log('✅ Loaded from storage:', this.deliveryData.length, 'deliveries,', this.driverData.length, 'drivers,', this.customerData.length, 'customers');
+          } catch (error) {
+            console.warn('⚠️ Error loading stored data, generating new mock data...');
             this.generateAndStoreNewMockData();
           }
         } else {
@@ -71,10 +73,14 @@ class DataService {
     this.driverData = calculateDriverMetrics(this.deliveryData);
     this.customerData = calculateCustomerMetrics(this.deliveryData);
     
-    // Store all data in localStorage for persistence
-    localStorage.setItem('foxDeliveryData', JSON.stringify(this.deliveryData));
-    localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
-    localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+    // Store all data using optimized storage
+    const deliveryStored = StorageUtils.setLargeItem('foxDeliveryData', this.deliveryData);
+    const driverStored = StorageUtils.setLargeItem('foxDriverData', this.driverData);
+    const customerStored = StorageUtils.setLargeItem('foxCustomerData', this.customerData);
+    
+    if (!deliveryStored || !driverStored || !customerStored) {
+      console.warn('⚠️ Some data could not be stored due to size constraints');
+    }
     
     // Log the new success rate
     const successRate = this.deliveryData.filter(d => d.status === 'delivered').length / this.deliveryData.length * 100;
@@ -84,18 +90,16 @@ class DataService {
 
   private async loadFromLocalStorage(): Promise<void> {
     try {
-      const storedDeliveryData = localStorage.getItem('foxDeliveryData');
-      const storedDriverData = localStorage.getItem('foxDriverData');
-      const storedCustomerData = localStorage.getItem('foxCustomerData');
-      const storedOriginalData = localStorage.getItem('foxOriginalData');
+      const storedDeliveryData = StorageUtils.getLargeItem('foxDeliveryData');
+      const storedDriverData = StorageUtils.getLargeItem('foxDriverData');
+      const storedCustomerData = StorageUtils.getLargeItem('foxCustomerData');
+      const storedOriginalData = StorageUtils.getLargeItem('foxOriginalData');
       
       if (storedDeliveryData) {
         try {
-          const parsedDeliveryData = JSON.parse(storedDeliveryData);
-          
-          // Validate that parsed data is an array
-          if (Array.isArray(parsedDeliveryData)) {
-            this.deliveryData = parsedDeliveryData;
+          // Data is already parsed by StorageUtils
+          if (Array.isArray(storedDeliveryData)) {
+            this.deliveryData = storedDeliveryData;
           } else {
             console.warn('⚠️ Invalid delivery data format in localStorage, starting with empty array');
             this.deliveryData = [];
@@ -104,25 +108,25 @@ class DataService {
           // Check if we have original XLSX data with company information
           if (storedOriginalData) {
             try {
-              const parsedOriginalData = JSON.parse(storedOriginalData);
-              if (Array.isArray(parsedOriginalData)) {
-                this.foxDeliveryData = parsedOriginalData;
+              // Data is already parsed by StorageUtils
+              if (Array.isArray(storedOriginalData)) {
+                this.foxDeliveryData = storedOriginalData;
                 console.log('📊 Found original XLSX data with company information');
                 
                 // Recalculate company metrics from original data if needed
                 if (storedCustomerData) {
-                  const parsedCustomerData = JSON.parse(storedCustomerData);
-                  if (Array.isArray(parsedCustomerData)) {
-                    this.customerData = parsedCustomerData;
+                  // Data is already parsed by StorageUtils
+                  if (Array.isArray(storedCustomerData)) {
+                    this.customerData = storedCustomerData;
                   } else {
                     console.log('🏢 Recalculating company metrics from XLSX data...');
                     this.customerData = calculateCompanyMetrics(this.foxDeliveryData);
-                    localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+                    StorageUtils.setLargeItem('foxCustomerData', this.customerData);
                   }
                 } else {
                   console.log('🏢 Recalculating company metrics from XLSX data...');
                   this.customerData = calculateCompanyMetrics(this.foxDeliveryData);
-                  localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+                  StorageUtils.setLargeItem('foxCustomerData', this.customerData);
                 }
               } else {
                 console.warn('⚠️ Invalid original data format in localStorage');
@@ -142,21 +146,21 @@ class DataService {
           // Try to load calculated driver data first, fallback to recalculation
           if (storedDriverData) {
             try {
-              const parsedDriverData = JSON.parse(storedDriverData);
-              if (Array.isArray(parsedDriverData)) {
-                this.driverData = parsedDriverData;
+              // Data is already parsed by StorageUtils
+              if (Array.isArray(storedDriverData)) {
+                this.driverData = storedDriverData;
               } else {
                 this.driverData = calculateDriverMetrics(this.deliveryData);
-                localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
+                StorageUtils.setLargeItem('foxDriverData', this.driverData);
               }
             } catch (error) {
               console.warn('⚠️ Error parsing driver data, recalculating...');
               this.driverData = calculateDriverMetrics(this.deliveryData);
-              localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
+              StorageUtils.setLargeItem('foxDriverData', this.driverData);
             }
           } else {
             this.driverData = calculateDriverMetrics(this.deliveryData);
-            localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
+            StorageUtils.setLargeItem('foxDriverData', this.driverData);
           }
           
           console.log('📥 Loaded data from localStorage');
@@ -231,14 +235,55 @@ class DataService {
   }
 
   async updateDeliveryData(newData: DeliveryData[]): Promise<void> {
-    this.deliveryData = newData;
-    this.driverData = calculateDriverMetrics(newData);
-    this.customerData = calculateCustomerMetrics(newData);
-    
-    // Update localStorage with all data
-    localStorage.setItem('foxDeliveryData', JSON.stringify(newData));
-    localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
-    localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+    try {
+      this.deliveryData = newData;
+      this.driverData = calculateDriverMetrics(newData);
+      this.customerData = calculateCustomerMetrics(newData);
+      
+      console.log(`📊 Updating data: ${newData.length} deliveries, ${this.driverData.length} drivers, ${this.customerData.length} customers`);
+      
+      // Try to store data with graceful degradation
+      let deliveryStored = false;
+      let driverStored = false;
+      let customerStored = false;
+      
+      try {
+        deliveryStored = StorageUtils.setLargeItem('foxDeliveryData', newData);
+        console.log(`📦 Delivery data storage: ${deliveryStored ? 'Success' : 'Failed'}`);
+      } catch (error) {
+        console.warn('⚠️ Failed to store delivery data:', error);
+      }
+      
+      try {
+        driverStored = StorageUtils.setLargeItem('foxDriverData', this.driverData);
+        console.log(`👥 Driver data storage: ${driverStored ? 'Success' : 'Failed'}`);
+      } catch (error) {
+        console.warn('⚠️ Failed to store driver data:', error);
+      }
+      
+      try {
+        customerStored = StorageUtils.setLargeItem('foxCustomerData', this.customerData);
+        console.log(`🏢 Customer data storage: ${customerStored ? 'Success' : 'Failed'}`);
+      } catch (error) {
+        console.warn('⚠️ Failed to store customer data:', error);
+      }
+      
+      // Even if storage fails, continue with in-memory data
+      if (!deliveryStored && !driverStored && !customerStored) {
+        console.warn('⚠️ All storage operations failed, continuing with in-memory data only');
+        console.log('ℹ️ Data is still available in current session but will not persist');
+      } else if (!deliveryStored || !driverStored || !customerStored) {
+        console.warn('⚠️ Some data could not be stored due to size constraints, but continuing...');
+        console.log('ℹ️ Data is available in current session, storage will be retried on next operation');
+      } else {
+        console.log('✅ All data successfully stored');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in updateDeliveryData:', error);
+      // Don't throw error - allow operation to continue with in-memory data
+      console.log('ℹ️ Continuing with in-memory data despite storage errors');
+    }
   }
 
   // New method to update data from XLSX files with company information
@@ -247,22 +292,26 @@ class DataService {
     
     // Store the original Fox data
     this.foxDeliveryData = foxData;
-    localStorage.setItem('foxOriginalData', JSON.stringify(foxData));
     
-    // Upload to Supabase first
-    console.log('💾 Uploading to Supabase...');
-    try {
-      const uploadResult = await uploadDeliveryData(foxData);
-      if (uploadResult.success) {
-        console.log(`✅ Successfully uploaded ${uploadResult.count} records to Supabase`);
-      } else {
-        console.error('❌ Failed to upload to Supabase:', uploadResult.error);
-        // Continue with local processing even if Supabase upload fails
+    // Start background operations immediately (non-blocking for UI)
+    Promise.resolve().then(async () => {
+      try {
+        console.log('💾 Uploading to Supabase in background...');
+        const uploadResult = await uploadDeliveryData(foxData);
+        if (uploadResult.success) {
+          console.log(`✅ Successfully uploaded ${uploadResult.count} records to Supabase`);
+        } else {
+          console.warn('⚠️ Background Supabase upload failed:', uploadResult.error);
+        }
+      } catch (error) {
+        console.warn('⚠️ Background Supabase upload error:', error);
       }
-    } catch (error) {
-      console.error('❌ Error uploading to Supabase:', error);
-      // Continue with local processing even if Supabase upload fails
-    }
+    });
+    
+    // Store original data (also non-blocking)
+    setTimeout(() => {
+      StorageUtils.setLargeItem('foxOriginalData', foxData);
+    }, 0);
     
     // Convert Fox delivery data to our internal format
     const convertedDeliveries = foxData.map((foxDelivery, index) => {
@@ -304,12 +353,46 @@ class DataService {
     this.customerData = calculateCompanyMetrics(foxData);
     console.log(`🏢 Calculated metrics for ${this.customerData.length} companies`);
     
-    // Update localStorage with all data
-    localStorage.setItem('foxDeliveryData', JSON.stringify(this.deliveryData));
-    localStorage.setItem('foxDriverData', JSON.stringify(this.driverData));
-    localStorage.setItem('foxCustomerData', JSON.stringify(this.customerData));
+    // Store data in background with graceful degradation
+    setTimeout(() => {
+      Promise.allSettled([
+        new Promise(resolve => {
+          try {
+            const stored = StorageUtils.setLargeItem('foxDeliveryData', this.deliveryData);
+            console.log(`📦 Fox delivery data storage: ${stored ? 'Success' : 'Failed'}`);
+            resolve(stored);
+          } catch (error) {
+            console.warn('⚠️ Failed to store Fox delivery data:', error);
+            resolve(false);
+          }
+        }),
+        new Promise(resolve => {
+          try {
+            const stored = StorageUtils.setLargeItem('foxDriverData', this.driverData);
+            console.log(`👥 Fox driver data storage: ${stored ? 'Success' : 'Failed'}`);
+            resolve(stored);
+          } catch (error) {
+            console.warn('⚠️ Failed to store Fox driver data:', error);
+            resolve(false);
+          }
+        }),
+        new Promise(resolve => {
+          try {
+            const stored = StorageUtils.setLargeItem('foxCustomerData', this.customerData);
+            console.log(`🏢 Fox customer data storage: ${stored ? 'Success' : 'Failed'}`);
+            resolve(stored);
+          } catch (error) {
+            console.warn('⚠️ Failed to store Fox customer data:', error);
+            resolve(false);
+          }
+        })
+      ]).then(results => {
+        const successful = results.filter(r => r.status === 'fulfilled' && r.value).length;
+        console.log(`💾 Storage completed: ${successful}/3 operations successful`);
+      });
+    }, 100); // Small delay to not block UI
     
-    console.log('💾 Updated localStorage with Fox delivery data');
+    console.log('📊 Fox data processing completed - storage running in background');
   }
 
   private mapFoxStatusToInternalStatus(status?: string): 'delivered' | 'failed' | 'pending' | 'in_transit' {
@@ -345,14 +428,14 @@ class DataService {
     
     if (clearStorage) {
       try {
-        localStorage.removeItem('foxDeliveryData');
-        localStorage.removeItem('foxDriverData');
-        localStorage.removeItem('foxCustomerData');
-        localStorage.removeItem('foxOriginalData');
-        console.log('🗑️ LocalStorage cleared successfully.');
+        StorageUtils.removeLargeItem('foxDeliveryData');
+        StorageUtils.removeLargeItem('foxDriverData');
+        StorageUtils.removeLargeItem('foxCustomerData');
+        StorageUtils.removeLargeItem('foxOriginalData');
+        console.log('🗑️ Storage cleared successfully.');
       } catch (error) {
-        console.error('❌ Error clearing localStorage:', error);
-        // Continue execution even if localStorage clearing fails
+        console.error('❌ Error clearing storage:', error);
+        // Continue execution even if storage clearing fails
       }
     }
     
@@ -363,10 +446,10 @@ class DataService {
   regenerateMockData(): void {
     if (USE_MOCK_DATA) {
       this.isInitialized = false; // Force re-initialization
-      // Clear localStorage to force new data generation
-      localStorage.removeItem('foxDeliveryData');
-      localStorage.removeItem('foxDriverData');
-      localStorage.removeItem('foxCustomerData');
+      // Clear storage to force new data generation
+      StorageUtils.removeLargeItem('foxDeliveryData');
+      StorageUtils.removeLargeItem('foxDriverData');
+      StorageUtils.removeLargeItem('foxCustomerData');
       this.generateAndStoreNewMockData();
       console.log('🔄 Mock data regenerated with new distribution');
     }

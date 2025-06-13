@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
 import { useToast } from '@/hooks/use-toast';
@@ -9,6 +8,8 @@ import DragDropFileUpload from '@/components/data-upload/DragDropFileUpload';
 import DeliveryTable from '@/components/data-import/DeliveryTable';
 import EmptyState from '@/components/data-import/EmptyState';
 import LoadingState from '@/components/data-import/LoadingState';
+import StorageInfo from '@/components/storage/StorageInfo';
+import StorageWarning from '@/components/storage/StorageWarning';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatabaseIcon } from 'lucide-react';
 
@@ -17,126 +18,112 @@ interface DataImportProps {
 }
 
 const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
-  const { deliveryData: deliveries, loading: isLoading, error, refetch } = useDeliveryData();
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage] = useState<number>(10);
-  const { toast } = useToast();
-  
-  // Configure maximum file size (in MB) - can be adjusted based on needs
-  const maxFileSizeMB = 200; // 200MB limit for large datasets
-  
-  // Add stats for monitoring data quality
-  const dataStats = useMemo(() => {
-    if (deliveries.length === 0) {
-      return { complete: 0, incomplete: 0, totalRecords: 0 };
-    }
-    
-    // Count records with all critical fields filled
-    const criticalFields: (keyof DeliveryData)[] = ['id', 'customerName', 'address', 'status'];
-    
-    const complete = deliveries.filter(delivery => 
-      criticalFields.every(field => delivery[field])
-    ).length;
-    
-    return {
-      complete,
-      incomplete: deliveries.length - complete,
-      totalRecords: deliveries.length
-    };
-  }, [deliveries]);
-  
-  const handleRefresh = async () => {
-    await refetch();
-    toast({
-      title: 'Dados atualizados',
-      description: `Foram carregados ${deliveries.length} registros de entrega.`,
-    });
-  };
+  const {
+    deliveryData: data,
+    loading,
+    error,
+    refetch,
+    updateData,
+    setError,
+  } = useDeliveryData();
 
-  const handleClearData = async () => {
+  const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+
+  const handleDataUpload = async (newData: any[]) => {
     try {
-      await dataService.clearAllData();
+      await updateData(newData);
       await refetch();
+      if (onDataUploaded) {
+        onDataUploaded(newData);
+      }
       toast({
-        title: 'Dados Limpos',
-        description: 'Todos os dados de entrega foram removidos do sistema.',
+        title: 'Data loaded successfully',
+        description: `${newData.length} records were imported.`,
       });
     } catch (error) {
+      console.error('Error in handleDataUpload:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error loading data';
+      setError(errorMessage);
       toast({
-        title: 'Erro ao Limpar',
-        description: 'Não foi possível limpar os dados.',
+        title: 'Error loading data',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
   };
-  
-  const handleFileUploadSuccess = async (uploadedData: DeliveryData[]) => {
-    // A lógica de salvar os dados agora é responsabilidade do componente pai,
-    // que tem acesso ao 'updateData' do hook.
-    if (onDataUploaded) {
-      onDataUploaded(uploadedData);
-    } else {
-      // Fallback: se nenhuma função for passada, apenas busca os dados novamente.
-      // Isso pode não refletir imediatamente os dados novos se a atualização for assíncrona.
-      await refetch();
-    }
-    
-    setCurrentPage(1); // Reseta a paginação para a primeira página
-    
-    toast({
-      title: 'Upload Concluído',
-      description: `O sistema foi atualizado com ${uploadedData.length} novos registros.`,
-    });
-  };
-  
-  const totalPages = Math.ceil(deliveries.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+
+  if (loading) {
+    return <LoadingState />;
+  }
 
   return (
-    <div className="container mx-auto p-4 py-6 space-y-8 max-w-7xl">
+    <div className="container mx-auto p-6 space-y-6">
       <DataImportHeader 
-        isLoading={isLoading} 
-        onRefresh={handleRefresh} 
-        recordCount={deliveries.length}
-        dataQuality={dataStats}
-      />
-      
-      <DragDropFileUpload 
-        onDataUploaded={handleFileUploadSuccess}
-        maxFileSizeMB={maxFileSizeMB}
+        isLoading={loading}
+        onRefresh={refetch}
+        recordCount={data.length}
+        onClearData={() => {
+          dataService.clearAllData();
+          refetch();
+        }}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DatabaseIcon className="h-5 w-5" />
-            Dados Atuais no Sistema
-          </CardTitle>
-          <CardDescription>
-            {deliveries.length > 0
-              ? `Exibindo ${deliveries.length} registros de entrega. Utilize a importação acima para adicionar ou substituir dados.`
-              : 'Nenhum dado carregado. Importe um arquivo para começar.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <LoadingState />
-          ) : deliveries.length > 0 ? (
-            <DeliveryTable 
-              deliveries={deliveries}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              startIndex={startIndex}
-              endIndex={endIndex}
-              setCurrentPage={setCurrentPage}
-              isLoading={isLoading}
-            />
-          ) : (
-            <EmptyState />
-          )}
-        </CardContent>
-      </Card>
+      {error && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <DatabaseIcon className="h-5 w-5" />
+              Data Loading Error
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-600">{error}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Storage Warning */}
+      <StorageWarning 
+        onClearStorage={() => {
+          dataService.clearAllData();
+          refetch();
+          toast({
+            title: 'Data cleared',
+            description: 'All locally stored data has been removed.',
+          });
+        }}
+        showDetails={false}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <DragDropFileUpload 
+            onDataUploaded={handleDataUpload}
+            maxFileSizeMB={200} // Increased from 100MB to 200MB
+          />
+        </div>
+        <div className="space-y-4">
+          <StorageInfo />
+        </div>
+      </div>
+
+      {data.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <DeliveryTable
+          deliveries={data}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          startIndex={(currentPage - 1) * itemsPerPage}
+          endIndex={Math.min(currentPage * itemsPerPage, data.length)}
+          setCurrentPage={setCurrentPage}
+          isLoading={loading}
+        />
+      )}
     </div>
   );
 };

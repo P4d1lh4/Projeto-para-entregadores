@@ -22,7 +22,8 @@ import {
   Route, 
   Upload, 
   HelpCircle,
-  X 
+  X,
+  Brain
 } from 'lucide-react';
 
 type SidebarProps = {
@@ -108,13 +109,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
           </span>
         </NavLink>
         
+
+        
         <NavLink 
-          to="/ai-assistant" 
+          to="/ai-analysis" 
           className={({ isActive }) => cn(navLinkClasses, isActive && activeNavLinkClasses)}
         >
-          <Bot size={20} />
+          <Brain size={20} />
           <span className={cn("transition-opacity", isOpen ? "opacity-100" : "opacity-0", "whitespace-nowrap")}>
-            AI Assistant
+            Smart Analysis
           </span>
         </NavLink>
         

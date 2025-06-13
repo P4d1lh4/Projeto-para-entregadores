@@ -8,8 +8,9 @@ import Companies from '@/pages/Companies';
 import Settings from '@/pages/Settings';
 import DataImport from '@/pages/DataImport';
 import Analytics from './Analytics';
-import AIAssistantPage from '@/pages/AIAssistantPage';
+
 import DeliveryAnalysis from '@/pages/DeliveryAnalysis';
+import AIAnalysis from '@/pages/AIAnalysis';
 import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -112,7 +113,8 @@ const Index = () => {
         <Route path="deliveries" element={<Deliveries deliveryData={deliveryData} />} />
         <Route path="customers" element={<Companies customerData={customerData} />} />
         <Route path="analytics" element={<Analytics deliveryData={deliveryData} driverData={driverData} customerData={customerData} />} />
-        <Route path="ai-assistant" element={<AIAssistantPage />} />
+        
+        <Route path="ai-analysis" element={<AIAnalysis />} />
         <Route path="data-import" element={<DataImport onDataUploaded={handleDataUploaded} />} />
         <Route path="settings" element={<Settings />} />
         <Route path="delivery-analysis" element={<DeliveryAnalysis />} />

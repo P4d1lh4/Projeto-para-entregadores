@@ -172,7 +172,7 @@ export const SupabaseCSVUpload: React.FC<SupabaseCSVUploadProps> = ({
       'application/vnd.ms-excel': ['.csv']
     },
     maxFiles: 1,
-    maxSize: 50 * 1024 * 1024, // 50MB
+    maxSize: 200 * 1024 * 1024, // 200MB (increased from 50MB)
     disabled: isUploading
   });
 
@@ -287,7 +287,7 @@ export const SupabaseCSVUpload: React.FC<SupabaseCSVUploadProps> = ({
                     {isDragActive ? 'Drop CSV file here...' : 'Upload CSV File'}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Drag and drop or click to select a CSV file (max 50MB)
+                    Drag and drop or click to select a CSV file (max 200MB)
                   </p>
                 </div>
                 <Button variant="outline" size="sm">

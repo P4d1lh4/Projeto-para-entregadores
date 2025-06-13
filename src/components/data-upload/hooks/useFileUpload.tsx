@@ -53,13 +53,17 @@ export const useFileUpload = (
     
     setIsProcessing(true);
     setParsedData([]);
+    setFoxData([]);
     
     try {
       let rawData: any[] = [];
+      let foxRawData: FoxDelivery[] = [];
       
       if (fileExt === 'xlsx' || fileExt === 'xls') {
         console.log('📊 Processando arquivo Excel com parser específico...');
-        rawData = await parseFoxDeliveryFile(file);
+        foxRawData = await parseFoxDeliveryFile(file);
+        rawData = foxRawData;
+        setFoxData(foxRawData); // Store the original Fox data
       } else {
         console.log('📄 Processando arquivo CSV com PapaParse...');
         const results = await parseFile(file);
@@ -101,6 +105,7 @@ export const useFileUpload = (
 
   const handleClear = useCallback(() => {
     setParsedData([]);
+    setFoxData([]);
     setUploadProgress(0);
   }, []);
 
@@ -122,8 +127,12 @@ export const useFileUpload = (
         setUploadProgress(prev => Math.min(prev + 5, 90));
       }, 300);
       
-      // Unified upload logic
-      await dataService.updateDeliveryData(parsedData);
+      // Use Fox data if available, otherwise use parsed data
+      if (foxData.length > 0) {
+        await dataService.updateFromFoxData(foxData);
+      } else {
+        await dataService.updateDeliveryData(parsedData);
+      }
       
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -136,6 +145,7 @@ export const useFileUpload = (
       // Clear parsed data after successful upload
       const uploadedData = [...parsedData];
       setParsedData([]);
+      setFoxData([]);
       
       if (onDataUploaded) {
         onDataUploaded(uploadedData);
@@ -152,11 +162,11 @@ export const useFileUpload = (
     } finally {
       setIsUploading(false);
     }
-  }, [parsedData, toast, onDataUploaded]);
+  }, [parsedData, foxData, toast, onDataUploaded]);
 
   return {
     parsedData,
-    foxData: [], // foxData is now handled within the unified flow
+    foxData, // Return the actual Fox data
     isProcessing,
     isUploading,
     uploadProgress,

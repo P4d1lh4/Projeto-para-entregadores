@@ -149,3 +149,10 @@ Para questões técnicas ou sugestões de melhorias:
 1. Verifique a documentação técnica
 2. Consulte os logs do navegador para erros
 3. Entre em contato com a equipe de desenvolvimento 
+
+🕒 Registro 1 - Collected Waiting Time encontrado: { valor: "01:23:45", tipo: "string", isHHMMSSFormat: true }
+🚚 Registro 1 - Delivered Waiting Time encontrado: { valor: "00:45:30", tipo: "string", isHHMMSSFormat: true }
+🔍 [Collection Time] Valores encontrados: [{ id: "del-1", raw: "01:23:45", minutes: 83.75 }]
+🔍 [Delivery Time] Valores encontrados: [{ id: "del-1", raw: "00:45:30", minutes: 45.5 }]
+🎯 [Collection Time] Remoção de outliers: { outliersRemovidos: 2 }
+🎯 [Delivery Time] Remoção de outliers: { outliersRemovidos: 1 } 

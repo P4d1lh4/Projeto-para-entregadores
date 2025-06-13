@@ -11,7 +11,13 @@ import {
 } from 'lucide-react';
 import type { DeliveryData, DriverData, CustomerData } from '@/lib/file-utils';
 import StatCard from '@/components/dashboard/StatCard';
-import { calculateAllTimeMetrics } from '@/utils/timeCalculations';
+import { 
+  calculateAllTimeMetrics, 
+  debugDeliveredWaitingTime,
+  calculateAllTimeMetricsFromWaitingColumn, 
+  testDeliveredWaitingTimeColumn,
+  advancedTimeDataDiagnosis
+} from '@/utils/timeCalculations';
 
 type AnalyticsProps = {
   deliveryData: DeliveryData[];
@@ -19,37 +25,43 @@ type AnalyticsProps = {
   customerData: CustomerData[];
 };
 
-const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, customerData }) => {
+function formatTimeSimple(minutes: number): string {
+  if (isNaN(minutes) || minutes < 0) return '0 min';
+  const mins = Math.floor(minutes);
+  const secs = Math.round((minutes - mins) * 60);
+  if (mins > 0) {
+    return `${mins} min ${secs > 0 ? `${secs} s` : ''}`.trim();
+  }
+  return `${secs} s`;
+}
 
+const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, customerData }) => {
   const timeMetrics = useMemo(() => {
-    console.log('📊 [Analytics] Iniciando cálculo de métricas de tempo...');
-    console.log('📊 [Analytics] Dados recebidos:', {
-      totalDeliveries: deliveryData.length,
-      firstDelivery: deliveryData[0] ? {
-        id: deliveryData[0].id,
-        status: deliveryData[0].status,
-        deliveryTime: deliveryData[0].deliveryTime,
-        timestamps: {
-          created_at: deliveryData[0].created_at,
-          collected_at: deliveryData[0].collected_at,
-          delivered_at: deliveryData[0].delivered_at
-        }
-      } : 'Nenhuma entrega encontrada'
-    });
+    if (deliveryData.length === 0) {
+      return {
+        avgCollectionTime: 0,
+        avgDeliveryTime: 0,
+        avgCustomerExperienceTime: 0,
+        avgCollectionTimeFormatted: '00:00:00',
+        avgDeliveryTimeFormatted: '00:00:00',
+        avgCustomerExperienceTimeFormatted: '00:00:00',
+        usedWaitingTimeForCollection: false,
+        usedWaitingTimeForDelivery: false,
+        collectionTimeMethod: 'N/A',
+        deliveryTimeMethod: 'N/A'
+      };
+    }
+      
+    console.log('📊 [Analytics] Iniciando cálculos de métricas de tempo...');
     
-    const result = calculateAllTimeMetrics(deliveryData);
+    // Diagnósticos (executados apenas em desenvolvimento, idealmente)
+    advancedTimeDataDiagnosis(deliveryData);
+    testDeliveredWaitingTimeColumn(deliveryData);
+    debugDeliveredWaitingTime(deliveryData);
     
-         console.log('📊 [Analytics] Métricas calculadas:', {
-       collectionTime: `${result.avgCollectionTime.toFixed(2)} min (${result.avgCollectionTimeFormatted})`,
-       deliveryTime: `${result.avgDeliveryTime.toFixed(2)} min (${result.avgDeliveryTimeFormatted})`,
-       totalTime: `${result.avgCustomerExperienceTime.toFixed(2)} min (${result.avgCustomerExperienceTimeFormatted})`,
-       collectionTimeSource: result.collectionTimeMethod || 'Cálculo padrão',
-       deliveryTimeSource: result.deliveryTimeMethod || 'Cálculo padrão',
-       usedWaitingTimeForCollection: result.usedWaitingTimeForCollection || false,
-       usedWaitingTimeForDelivery: result.usedWaitingTimeForDelivery || false
-     });
-    
-    return result;
+    const metrics = calculateAllTimeMetricsFromWaitingColumn(deliveryData);
+    console.log('📊 [Analytics] Métricas calculadas:', metrics);
+    return metrics;
   }, [deliveryData]);
 
   const operationalMetrics = useMemo(() => {
@@ -79,45 +91,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
     const retentionRate = totalUniqueCustomers > 0 ? 
       Math.round((repeatCustomers / totalUniqueCustomers) * 100) : 0;
 
-    // Tendências semanais (últimas 8 semanas)
-    const weeklyData = new Map<string, number>();
-    const now = new Date();
-    
-    // Inicializar todas as semanas com 0
-    for (let i = 7; i >= 0; i--) {
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - (i * 7));
-      const weekKey = `${weekStart.getDate().toString().padStart(2, '0')}/${(weekStart.getMonth() + 1).toString().padStart(2, '0')}`;
-      weeklyData.set(weekKey, 0);
-    }
-
-    deliveryData.forEach(delivery => {
-      if (delivery.deliveryTime) {
-        try {
-          const createdDate = new Date(delivery.deliveryTime);
-          if (!isNaN(createdDate.getTime())) {
-            const weekKey = `${createdDate.getDate().toString().padStart(2, '0')}/${(createdDate.getMonth() + 1).toString().padStart(2, '0')}`;
-            if (weeklyData.has(weekKey)) {
-              weeklyData.set(weekKey, weeklyData.get(weekKey)! + 1);
-            }
-          }
-        } catch (error) {
-          console.warn('Erro ao processar data:', delivery.deliveryTime, error);
-        }
-      }
-    });
-
-    const weeklyTrends = Array.from(weeklyData.entries()).map(([week, orders]) => ({
-      week,
-      orders
-    }));
-
     return {
       cancellationRate,
       retentionRate,
       totalUniqueCustomers,
       repeatCustomers,
-      weeklyTrends
     };
   }, [deliveryData, driverData, customerData]);
 
@@ -131,16 +109,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
       validDeliveries: successfulDeliveries.length
     };
   }, [deliveryData]);
-
-  const formatTimeSimple = (minutes: number): string => {
-    if (minutes < 60) {
-      return `${Math.round(minutes)}min`;
-    } else {
-      const hours = Math.floor(minutes / 60);
-      const mins = Math.round(minutes % 60);
-      return mins > 0 ? `${hours}h ${mins}min` : `${hours}h`;
-    }
-  };
 
   return (
     <TooltipProvider>
@@ -158,10 +126,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
             <TooltipTrigger asChild>
               <div>
                 <StatCard 
-                  title="Taxa de Cancelamento"
+                  title="Cancellation Rate"
                   value={`${operationalMetrics.cancellationRate}%`}
                   icon={<XCircle size={20} />}
-                  description="Entregas canceladas vs total"
+                  description="Cancelled vs total deliveries"
                   trend={{
                     value: operationalMetrics.cancellationRate < 5 ? 5 : -operationalMetrics.cancellationRate,
                     isPositive: operationalMetrics.cancellationRate < 5
@@ -170,8 +138,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Cálculo: (nº entregas com status 'failed') / (total entregas) × 100</p>
-              <p>Meta ideal: &lt; 5%</p>
+              <p>Calculation: (number of deliveries with 'failed' status) / (total deliveries) × 100</p>
+              <p>Ideal target: &lt; 5%</p>
             </TooltipContent>
           </Tooltip>
 
@@ -179,10 +147,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
             <TooltipTrigger asChild>
               <div>
                 <StatCard 
-                  title="Tempo Médio de Coleta"
+                  title="Average Collection Time"
                   value={timeMetrics.avgCollectionTimeFormatted}
                   icon={<Timer size={20} />}
-                  description={timeMetrics.usedWaitingTimeForCollection ? 'Pré-calculado (CSV)' : 'Pedido à coleta'}
+                  description={timeMetrics.usedWaitingTimeForCollection ? 'Pre-calculated (CSV)' : 'Order to collection'}
                   trend={{
                     value: timeMetrics.avgCollectionTime < 60 ? 5 : -2,
                     isPositive: timeMetrics.avgCollectionTime < 60
@@ -191,11 +159,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p><strong>Fonte:</strong> {timeMetrics.collectionTimeMethod}</p>
-              <p><strong>Descrição:</strong> {timeMetrics.usedWaitingTimeForCollection ? 
-                'Tempo de espera pré-calculado do sistema de origem.' : 
-                'Tempo entre a criação do pedido e a coleta pelo motorista.'}</p>
-              <p><strong>Meta ideal:</strong> &lt; 1 hora</p>
+              <p><strong>Source:</strong> {timeMetrics.collectionTimeMethod}</p>
+              <p><strong>Description:</strong> {timeMetrics.usedWaitingTimeForCollection ? 
+                'Pre-calculated waiting time from the source system.' : 
+                'Time between order creation and collection by driver.'}</p>
+              <p><strong>Ideal target:</strong> &lt; 1 hour</p>
             </TooltipContent>
           </Tooltip>
 
@@ -203,10 +171,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
             <TooltipTrigger asChild>
               <div>
                 <StatCard 
-                  title="Tempo Médio de Entrega"
+                  title="Average Delivery Time"
                   value={timeMetrics.avgDeliveryTimeFormatted}
                   icon={<ArrowDownCircle size={20} />}
-                  description={timeMetrics.usedWaitingTimeForDelivery ? 'Pré-calculado (CSV)' : 'Coleta à entrega'}
+                  description={timeMetrics.usedWaitingTimeForDelivery ? 'Pre-calculated (CSV)' : 'Collection to delivery'}
                   trend={{
                     value: timeMetrics.avgDeliveryTime < 45 ? 5 : -2,
                     isPositive: timeMetrics.avgDeliveryTime < 45
@@ -215,11 +183,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p><strong>Fonte:</strong> {timeMetrics.deliveryTimeMethod}</p>
-              <p><strong>Descrição:</strong> {timeMetrics.usedWaitingTimeForDelivery ? 
-                'Tempo de entrega pré-calculado do sistema de origem.' : 
-                'Tempo entre a coleta pelo motorista e a entrega final.'}</p>
-              <p><strong>Meta ideal:</strong> &lt; 45 minutos</p>
+              <p><strong>Source:</strong> {timeMetrics.deliveryTimeMethod}</p>
+              <p><strong>Description:</strong> {timeMetrics.usedWaitingTimeForDelivery ? 
+                'Pre-calculated delivery time from the source system.' : 
+                'Time between collection by driver and final delivery.'}</p>
+              <p><strong>Ideal target:</strong> &lt; 45 minutes</p>
             </TooltipContent>
           </Tooltip>
 
@@ -227,10 +195,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
             <TooltipTrigger asChild>
               <div>
                 <StatCard 
-                  title="Retenção de Clientes"
+                  title="Customer Retention"
                   value={`${operationalMetrics.retentionRate}%`}
                   icon={<UserCheck size={20} />}
-                  description={`${operationalMetrics.repeatCustomers} de ${operationalMetrics.totalUniqueCustomers} clientes`}
+                  description={`${operationalMetrics.repeatCustomers} of ${operationalMetrics.totalUniqueCustomers} customers`}
                   trend={{
                     value: operationalMetrics.retentionRate > 30 ? operationalMetrics.retentionRate : -5,
                     isPositive: operationalMetrics.retentionRate > 30
@@ -239,9 +207,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Cálculo: (clientes com mais de 1 pedido) / (total clientes únicos) × 100</p>
-              <p>Baseado em 'Customer Name'</p>
-              <p>Meta ideal: &gt; 30%</p>
+              <p>Calculation: (customers with more than 1 order) / (total unique customers) × 100</p>
+              <p>Based on 'Customer Name'</p>
+              <p>Ideal target: &gt; 30%</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -283,11 +251,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
         </div>
 
         {/* Tabs com análises detalhadas */}
-        <Tabs defaultValue="trends" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="trends" className="flex gap-2 items-center">
-              <TrendingUp className="h-4 w-4" /> Tendências Semanais
-            </TabsTrigger>
+        <Tabs defaultValue="performance" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="performance" className="flex gap-2 items-center">
               <AlertTriangle className="h-4 w-4" /> Performance Operacional
             </TabsTrigger>
@@ -296,148 +261,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
             </TabsTrigger>
           </TabsList>
 
-          {/* Tendências Tab */}
-          <TabsContent value="trends" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Tendência Semanal de Pedidos (Últimas 8 Semanas)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={operationalMetrics.weeklyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis 
-                        dataKey="week" 
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis />
-                      <RechartsTooltip 
-                        formatter={(value, name) => [value, 'Pedidos']}
-                        labelFormatter={(label) => `Semana: ${label}`}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="orders" 
-                        stroke="#2563eb" 
-                        strokeWidth={3}
-                        dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-2">Insights da Tendência</h4>
-                  <div className="text-sm text-blue-700 space-y-1">
-                    <p>• Dados baseados na coluna 'Delivery Time' dos arquivos carregados</p>
-                    <p>• Inclui <strong>todos os dias da semana</strong> (não apenas segunda-feira)</p>
-                    <p>• Use esta tendência para planejar recursos e capacidade operacional</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           {/* Performance Tab */}
           <TabsContent value="performance" className="space-y-6">
-            {/* Seção informativa sobre cálculo de tempo de entrega */}
-            <Card className="border-orange-200 bg-orange-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-800">
-                  <Timer className="h-5 w-5" />
-                  📊 Cálculo de Tempo Médio de Coleta
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-orange-700">Fonte:</span>
-                    <code className="bg-white px-2 py-1 rounded border text-xs">
-                      {timeMetrics.collectionTimeMethod}
-                    </code>
-                    {timeMetrics.usedWaitingTimeForCollection && (
-                      <span className="text-green-600 text-xs font-medium">✅ Usando Dados do CSV</span>
-                    )}
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="font-semibold text-orange-700 mt-0.5">Descrição:</span>
-                    <div className="text-orange-600">
-                      {timeMetrics.usedWaitingTimeForCollection ? (
-                        <>
-                          <p>Utilizando valores pré-calculados da coluna <strong>"Collected Waiting Time"</strong> do arquivo importado.</p>
-                          <p className="mt-1">Esta é a fonte mais precisa para o tempo de espera na coleta, pois vem do sistema de origem.</p>
-                        </>
-                      ) : (
-                        <>
-                          <p>Calcula o tempo entre a criação do pedido (<strong>created_at</strong>) e a coleta pelo motorista (<strong>collected_at</strong>).</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-orange-700">Resultado Atual:</span>
-                    <span className="font-bold text-orange-800 text-lg">
-                      {timeMetrics.avgCollectionTimeFormatted}
-                    </span>
-                    <span className="text-orange-600">
-                      ({formatTimeSimple(timeMetrics.avgCollectionTime)})
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Seção informativa sobre cálculo de tempo de entrega */}
-            <Card className="border-blue-200 bg-blue-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-blue-800">
-                  <ArrowDownCircle className="h-5 w-5" />
-                  🚚 Cálculo de Tempo Médio de Entrega
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-blue-700">Fonte:</span>
-                    <code className="bg-white px-2 py-1 rounded border text-xs">
-                      {timeMetrics.deliveryTimeMethod}
-                    </code>
-                    {timeMetrics.usedWaitingTimeForDelivery && (
-                      <span className="text-green-600 text-xs font-medium">✅ Usando Dados do CSV</span>
-                    )}
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="font-semibold text-blue-700 mt-0.5">Descrição:</span>
-                    <div className="text-blue-600">
-                      {timeMetrics.usedWaitingTimeForDelivery ? (
-                        <>
-                          <p>Utilizando valores pré-calculados da coluna <strong>"Delivered Waiting Time"</strong> do arquivo importado.</p>
-                          <p className="mt-1">Esta é a fonte mais precisa para o tempo de entrega, pois reflete dados reais do sistema de origem.</p>
-                        </>
-                      ) : (
-                        <>
-                          <p>Calcula o tempo entre a coleta pelo motorista (<strong>collected_at</strong>) e a entrega final (<strong>delivered_at</strong>).</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-blue-700">Resultado Atual:</span>
-                    <span className="font-bold text-blue-800 text-lg">
-                      {timeMetrics.avgDeliveryTimeFormatted}
-                    </span>
-                    <span className="text-blue-600">
-                      ({formatTimeSimple(timeMetrics.avgDeliveryTime)})
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -586,7 +411,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                     <div className="text-3xl font-bold text-blue-600">
                       {operationalMetrics.totalUniqueCustomers}
                     </div>
-                    <div className="text-sm text-muted-foreground">Clientes Únicos</div>
+                    <div className="text-sm text-muted-foreground">Total de Clientes</div>
                   </div>
                   
                   <div className="text-center p-4 border rounded-lg">

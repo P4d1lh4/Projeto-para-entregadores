@@ -167,9 +167,25 @@ class OpenAIService {
           bestTimeSlots: ['09:00-11:00', '14:00-16:00']
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting delivery insights:', error);
-      throw new Error('Failed to get delivery insights');
+      
+      // Handle specific OpenAI errors
+      if (error?.status === 429) {
+        throw new Error('OpenAI quota exceeded. Please check your billing and usage limits at https://platform.openai.com/account/billing');
+      } else if (error?.status === 401) {
+        throw new Error('Invalid OpenAI API key. Please check your API key in Settings.');
+      } else if (error?.status === 403) {
+        throw new Error('OpenAI API access denied. Please check your API key permissions.');
+      } else if (error?.status >= 500) {
+        throw new Error('OpenAI service is temporarily unavailable. Please try again later.');
+      } else if (error?.message?.includes('quota')) {
+        throw new Error('OpenAI quota exceeded. Please check your billing and usage limits.');
+      } else if (error?.message?.includes('rate limit')) {
+        throw new Error('Too many requests. Please wait a moment and try again.');
+      }
+      
+      throw new Error(`OpenAI Error: ${error?.message || 'Failed to get delivery insights'}`);
     }
   }
 
@@ -205,9 +221,25 @@ class OpenAIService {
         message: response,
         suggestions: [] // Could be enhanced to extract suggestions
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error in AI chat:', error);
-      throw new Error('Failed to get AI response');
+      
+      // Handle specific OpenAI errors
+      if (error?.status === 429) {
+        throw new Error('OpenAI quota exceeded. Please check your billing and usage limits at https://platform.openai.com/account/billing');
+      } else if (error?.status === 401) {
+        throw new Error('Invalid OpenAI API key. Please check your API key in Settings.');
+      } else if (error?.status === 403) {
+        throw new Error('OpenAI API access denied. Please check your API key permissions.');
+      } else if (error?.status >= 500) {
+        throw new Error('OpenAI service is temporarily unavailable. Please try again later.');
+      } else if (error?.message?.includes('quota')) {
+        throw new Error('OpenAI quota exceeded. Please check your billing and usage limits.');
+      } else if (error?.message?.includes('rate limit')) {
+        throw new Error('Too many requests. Please wait a moment and try again.');
+      }
+      
+      throw new Error(`OpenAI Error: ${error?.message || 'Failed to get AI response'}`);
     }
   }
 

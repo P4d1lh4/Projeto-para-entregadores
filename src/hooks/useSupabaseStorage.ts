@@ -47,7 +47,7 @@ export const useSupabaseStorage = (options: UseSupabaseStorageOptions): UseSupab
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ],
-    fileSizeLimit = 50 * 1024 * 1024 // 50MB
+    fileSizeLimit = 200 * 1024 * 1024 // 200MB (increased from 50MB)
   } = options;
 
   const [files, setFiles] = useState<StorageFile[]>([]);

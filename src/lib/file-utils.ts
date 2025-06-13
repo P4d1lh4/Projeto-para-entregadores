@@ -162,7 +162,7 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
   console.log(`  - Unique drivers: ${validationReport.uniqueDrivers}`);
   console.log(`  - Driver identification rate: ${((validationReport.recordsWithDrivers / validationReport.totalRecords) * 100).toFixed(1)}%`);
   
-  return cleanedData.map((item, index) => {
+  const formattedData = cleanedData.map((item, index) => {
     // Use the enhanced driver identifier from validation
     const driverIdentifier = extractDriverIdentifier(item);
     
@@ -265,13 +265,16 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
     if (index < 3) {
       console.log(`🔍 Registro ${index + 1} - Mapeamento de timestamps:`, {
         colunasDetectadas: detectedColumns,
+        todasAsColunas: Object.keys(item),
         colunasOriginais: Object.keys(item).filter(key => 
           key.toLowerCase().includes('created') || 
           key.toLowerCase().includes('collected') || 
           key.toLowerCase().includes('delivered') ||
           key.toLowerCase().includes('date') ||
           key.toLowerCase().includes('time') ||
-          key.toLowerCase().includes('pickup')
+          key.toLowerCase().includes('pickup') ||
+          key.toLowerCase().includes('waiting') ||
+          key.toLowerCase().includes('wait')
         ),
         valoresOriginais: {
           created: detectedColumns.createdAtColumn ? item[detectedColumns.createdAtColumn] : 'N/A',
@@ -295,14 +298,41 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
                                  item['Waiting Time'] ||
                                  item.waiting_time;
     
-    // Log da coluna de tempo de espera para debug
-    if (index < 3 && collectedWaitingTime) {
+    // Log da coluna de tempo de espera para debug (expandido para mostrar tipo e formato)
+    if (index < 5 && collectedWaitingTime) {
       console.log(`🕒 Registro ${index + 1} - Collected Waiting Time encontrado:`, {
         colunaEncontrada: Object.keys(item).find(key => 
           key.toLowerCase().includes('collected') && key.toLowerCase().includes('waiting')
         ),
         valor: collectedWaitingTime,
+        tipoValor: typeof collectedWaitingTime,
+        length: collectedWaitingTime?.length,
+        isHHMMSSFormat: /^\d{1,2}:\d{2}(:\d{2})?$/.test(collectedWaitingTime),
         valorNumerico: parseFloat(collectedWaitingTime)
+      });
+    }
+    
+    // Log similar para Delivered Waiting Time
+    const deliveredWaitingTime = item['Delivered Waiting Time'] || 
+                                 item['delivered_waiting_time'] || 
+                                 item.delivered_waiting_time ||
+                                 item.deliveredWaitingTime ||
+                                 item['Delivery Waiting Time'] ||
+                                 item['Delivered Wait Time'] ||
+                                 item['Delivery Wait Time'] ||
+                                 item['Delivered Time'] ||
+                                 item.delivery_waiting_time ||
+                                 item.delivered_wait_time;
+    if (index < 5 && deliveredWaitingTime) {
+      console.log(`🚚 Registro ${index + 1} - Delivered Waiting Time encontrado:`, {
+        colunaEncontrada: Object.keys(item).find(key => 
+          key.toLowerCase().includes('delivered') && key.toLowerCase().includes('waiting')
+        ),
+        valor: deliveredWaitingTime,
+        tipoValor: typeof deliveredWaitingTime,
+        length: deliveredWaitingTime?.length,
+        isHHMMSSFormat: /^\d{1,2}:\d{2}(:\d{2})?$/.test(deliveredWaitingTime),
+        valorNumerico: parseFloat(deliveredWaitingTime)
       });
     }
     
@@ -322,10 +352,30 @@ export function formatDeliveryData(data: any[]): DeliveryData[] {
       createdAt: createdAt.toISOString(),
       collectedAt: collectedAt.toISOString(),
       deliveredAt: deliveredAt ? deliveredAt.toISOString() : undefined,
-      collectedWaitingTime: collectedWaitingTime ? parseFloat(collectedWaitingTime) : undefined,
-      deliveredWaitingTime: item['Delivered Waiting Time'] || item.delivered_waiting_time ? parseFloat(item['Delivered Waiting Time'] || item.delivered_waiting_time) : undefined,
+      collectedWaitingTime: collectedWaitingTime || undefined,
+      deliveredWaitingTime: deliveredWaitingTime || undefined,
     };
   });
+  
+  // Log final para verificar se as colunas de tempo de espera foram preservadas
+  const deliveriesWithCollectedTime = formattedData.filter(d => d.collectedWaitingTime !== undefined).length;
+  const deliveriesWithDeliveredTime = formattedData.filter(d => d.deliveredWaitingTime !== undefined).length;
+  
+  console.log('📋 [formatDeliveryData] Resultado final do mapeamento:', {
+    totalEntregas: formattedData.length,
+    entregasComCollectedWaitingTime: deliveriesWithCollectedTime,
+    entregasComDeliveredWaitingTime: deliveriesWithDeliveredTime,
+    amostrasCollectedWaitingTime: formattedData.slice(0, 3).map(d => ({
+      id: d.id,
+      collectedWaitingTime: d.collectedWaitingTime
+    })),
+    amostrasDeliveredWaitingTime: formattedData.slice(0, 3).map(d => ({
+      id: d.id,
+      deliveredWaitingTime: d.deliveredWaitingTime
+    }))
+  });
+  
+  return formattedData;
 }
 
 // Helper function to normalize and clean driver identifiers (same as calculations.ts)

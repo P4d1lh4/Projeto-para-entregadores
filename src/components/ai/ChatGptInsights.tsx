@@ -155,7 +155,21 @@ ${insights.bestTimeSlots.map(slot => `• ${slot}`).join('\n')}
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p>{error}</p>
+                  {error.includes('quota') && (
+                    <div className="text-sm">
+                      <p><strong>How to fix:</strong></p>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li>Check your OpenAI account billing at <a href="https://platform.openai.com/account/billing" target="_blank" rel="noopener noreferrer" className="underline text-blue-600">platform.openai.com/account/billing</a></li>
+                        <li>Add payment method or purchase credits</li>
+                        <li>Verify your usage limits and upgrade plan if needed</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </AlertDescription>
               <Button size="sm" variant="outline" onClick={clearError} className="ml-2">
                 Close
               </Button>

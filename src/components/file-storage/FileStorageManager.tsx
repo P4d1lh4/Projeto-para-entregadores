@@ -37,7 +37,7 @@ export const FileStorageManager: React.FC<FileStorageManagerProps> = ({
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     ],
-    fileSizeLimit: 50 * 1024 * 1024 // 50MB
+    fileSizeLimit: 200 * 1024 * 1024 // 200MB (increased from 50MB)
   });
 
   // Initialize storage and load files on mount
@@ -180,7 +180,7 @@ export const FileStorageManager: React.FC<FileStorageManagerProps> = ({
                       disabled={storage.isUploading}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Supported: CSV, XLSX, XLS (max 50MB)
+                      Supported: CSV, XLSX, XLS (max 200MB)
                     </p>
                   </div>
                 )}

@@ -12,9 +12,8 @@ import {
 import type { DeliveryData, DriverData, CustomerData } from '@/lib/file-utils';
 import StatCard from '@/components/dashboard/StatCard';
 import { 
-  calculateAllTimeMetrics, 
-  debugDeliveredWaitingTime,
   calculateAllTimeMetricsFromWaitingColumn, 
+  debugDeliveredWaitingTime,
   testDeliveredWaitingTimeColumn,
   advancedTimeDataDiagnosis
 } from '@/utils/timeCalculations';
@@ -52,31 +51,55 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
       };
     }
       
-    console.log('📊 [Analytics] Iniciando cálculos de métricas de tempo...');
+    console.log('📊 [Analytics] Starting time metrics calculations...');
     
-    // Diagnósticos (executados apenas em desenvolvimento, idealmente)
+    // Diagnostics (ideally executed only in development)
     advancedTimeDataDiagnosis(deliveryData);
     testDeliveredWaitingTimeColumn(deliveryData);
     debugDeliveredWaitingTime(deliveryData);
     
     const metrics = calculateAllTimeMetricsFromWaitingColumn(deliveryData);
-    console.log('📊 [Analytics] Métricas calculadas:', metrics);
+    
+    // Detailed calculation logs for verification
+    console.log('📊 [Analytics] ===== CALCULATION VERIFICATION =====');
+    console.log('📊 [Analytics] Collection Time:', {
+      minutes: metrics.avgCollectionTime.toFixed(2),
+      formatted: metrics.avgCollectionTimeFormatted,
+      method: metrics.collectionTimeMethod,
+      usingColumn: metrics.usedWaitingTimeForCollection
+    });
+    console.log('📊 [Analytics] Delivery Time:', {
+      minutes: metrics.avgDeliveryTime.toFixed(2),
+      formatted: metrics.avgDeliveryTimeFormatted,
+      method: metrics.deliveryTimeMethod,
+      usingColumn: metrics.usedWaitingTimeForDelivery
+    });
+    console.log('📊 [Analytics] Total Time (Sum):', {
+      collection: metrics.avgCollectionTime.toFixed(2),
+      delivery: metrics.avgDeliveryTime.toFixed(2),
+      sum: (metrics.avgCollectionTime + metrics.avgDeliveryTime).toFixed(2),
+      calculated: metrics.avgCustomerExperienceTime.toFixed(2),
+      formatted: metrics.avgCustomerExperienceTimeFormatted,
+      sumCorrect: Math.abs((metrics.avgCollectionTime + metrics.avgDeliveryTime) - metrics.avgCustomerExperienceTime) < 0.01
+    });
+    console.log('📊 [Analytics] ===== END VERIFICATION =====');
+    
     return metrics;
   }, [deliveryData]);
 
   const operationalMetrics = useMemo(() => {
-    console.log('🔄 Calculando métricas operacionais com dados:', {
+    console.log('🔄 Calculating operational metrics with data:', {
       deliveries: deliveryData.length,
       drivers: driverData.length,
       customers: customerData.length
     });
 
-    // Taxa de cancelamento (baseada no status)
+    // Cancellation rate (based on status)
     const canceledDeliveries = deliveryData.filter(d => d.status === 'failed');
     const cancellationRate = deliveryData.length > 0 ? 
       Math.round((canceledDeliveries.length / deliveryData.length) * 100) : 0;
 
-    // Taxa de retenção de clientes
+    // Customer retention rate
     const customerOrderCounts = new Map<string, number>();
     
     deliveryData.forEach(delivery => {
@@ -116,11 +139,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-            <p className="text-muted-foreground">Indicadores operacionais baseados em dados reais para tomada de decisão</p>
+            <p className="text-muted-foreground">Real-data operational indicators for decision making</p>
           </div>
         </div>
         
-        {/* Principais KPIs Operacionais */}
+        {/* Main Operational KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -214,13 +237,13 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
           </Tooltip>
         </div>
 
-        {/* KPIs Secundários */}
+        {/* Secondary KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard 
-            title="Taxa de Sucesso"
+            title="Success Rate"
             value={`${secondaryMetrics.successRate}%`}
             icon={<TrendingUp size={20} />}
-            description="Entregas bem-sucedidas"
+            description="Successful deliveries"
             trend={{
               value: secondaryMetrics.successRate,
               isPositive: secondaryMetrics.successRate > 90
@@ -228,10 +251,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
           />
           
           <StatCard 
-            title="Tempo Médio Total"
+            title="Average Total Time"
             value={timeMetrics.avgCustomerExperienceTimeFormatted}
             icon={<Clock size={20} />}
-            description="Experiência completa do cliente"
+            description="Complete customer experience"
             trend={{
               value: timeMetrics.avgCustomerExperienceTime < 120 ? 5 : -2,
               isPositive: timeMetrics.avgCustomerExperienceTime < 120
@@ -239,10 +262,10 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
           />
 
           <StatCard 
-            title="Total de Entregas"
+            title="Total Deliveries"
             value={deliveryData.length.toString()}
             icon={<Users size={20} />}
-            description="Volume total processado"
+            description="Total volume processed"
             trend={{
               value: deliveryData.length,
               isPositive: deliveryData.length > 0
@@ -250,14 +273,14 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
           />
         </div>
 
-        {/* Tabs com análises detalhadas */}
+        {/* Tabs with detailed analysis */}
         <Tabs defaultValue="performance" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="performance" className="flex gap-2 items-center">
-              <AlertTriangle className="h-4 w-4" /> Performance Operacional
+              <AlertTriangle className="h-4 w-4" /> Operational Performance
             </TabsTrigger>
             <TabsTrigger value="customers" className="flex gap-2 items-center">
-              <Users className="h-4 w-4" /> Análise de Clientes
+              <Users className="h-4 w-4" /> Customer Analysis
             </TabsTrigger>
           </TabsList>
 
@@ -268,20 +291,20 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Timer className="h-5 w-5" />
-                    Tempos Operacionais Detalhados
+                    Detailed Operational Times
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center p-3 border rounded-lg bg-orange-50">
                       <div>
-                        <div className="font-medium">Tempo Médio de Coleta</div>
+                        <div className="font-medium">Average Collection Time</div>
                         <div className="text-sm text-muted-foreground">
                           {timeMetrics.avgCollectionTimeFormatted}
                         </div>
                         {timeMetrics.usedWaitingTimeForCollection && (
                         <div className="text-xs text-green-600 mt-1">
-                          ⏱️ Usando "Collected Waiting Time"
+                          ⏱️ Using "Collected Waiting Time"
                         </div>
                         )}
                       </div>
@@ -292,13 +315,13 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                     
                     <div className="flex justify-between items-center p-3 border rounded-lg bg-blue-50">
                       <div>
-                        <div className="font-medium">Tempo Médio de Entrega</div>
+                        <div className="font-medium">Average Delivery Time</div>
                         <div className="text-sm text-muted-foreground">
                           {timeMetrics.avgDeliveryTimeFormatted}
                         </div>
                         {timeMetrics.usedWaitingTimeForDelivery && (
                         <div className="text-xs text-green-600 mt-1">
-                          ⏱️ Usando "Delivered Waiting Time"
+                          ⏱️ Using "Delivered Waiting Time"
                         </div>
                         )}
                       </div>
@@ -309,9 +332,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
 
                     <div className="flex justify-between items-center p-3 border rounded-lg bg-green-50">
                       <div>
-                        <div className="font-medium">Tempo Total Médio</div>
+                        <div className="font-medium">Average Total Time</div>
                         <div className="text-sm text-muted-foreground">
                           {timeMetrics.avgCustomerExperienceTimeFormatted}
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          📊 Collection ({formatTimeSimple(timeMetrics.avgCollectionTime)}) + Delivery ({formatTimeSimple(timeMetrics.avgDeliveryTime)})
                         </div>
                       </div>
                       <div className="text-green-600 font-bold text-lg">
@@ -326,7 +352,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <AlertTriangle className="h-5 w-5" />
-                    Indicadores de Alerta
+                    Alert Indicators
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -337,12 +363,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                       <div className={`font-medium ${
                         operationalMetrics.cancellationRate > 5 ? 'text-red-800' : 'text-green-800'
                       }`}>
-                        Taxa de Cancelamento {operationalMetrics.cancellationRate > 5 ? 'Alta' : 'Normal'}
+                        Cancellation Rate {operationalMetrics.cancellationRate > 5 ? 'High' : 'Normal'}
                       </div>
                       <div className={`text-sm ${
                         operationalMetrics.cancellationRate > 5 ? 'text-red-600' : 'text-green-600'
                       }`}>
-                        {operationalMetrics.cancellationRate}% {operationalMetrics.cancellationRate > 5 ? '(acima da meta de 5%)' : '(dentro da meta)'}
+                        {operationalMetrics.cancellationRate}% {operationalMetrics.cancellationRate > 5 ? '(above 5% target)' : '(within target)'}
                       </div>
                     </div>
 
@@ -352,12 +378,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                       <div className={`font-medium ${
                         timeMetrics.avgCollectionTime > 60 ? 'text-yellow-800' : 'text-green-800'
                       }`}>
-                        Tempo de Coleta {timeMetrics.avgCollectionTime > 60 ? 'Elevado' : 'Eficiente'}
+                        Collection Time {timeMetrics.avgCollectionTime > 60 ? 'High' : 'Efficient'}
                       </div>
                       <div className={`text-sm ${
                         timeMetrics.avgCollectionTime > 60 ? 'text-yellow-600' : 'text-green-600'
                       }`}>
-                        {formatTimeSimple(timeMetrics.avgCollectionTime)} {timeMetrics.avgCollectionTime > 60 ? '(revisar processos)' : '(boa performance)'}
+                        {formatTimeSimple(timeMetrics.avgCollectionTime)} {timeMetrics.avgCollectionTime > 60 ? '(review processes)' : '(good performance)'}
                       </div>
                     </div>
 
@@ -367,12 +393,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                       <div className={`font-medium ${
                         timeMetrics.avgDeliveryTime > 45 ? 'text-red-800' : 'text-green-800'
                       }`}>
-                        Tempo de Entrega {timeMetrics.avgDeliveryTime > 45 ? 'Lento' : 'Rápido'}
+                        Delivery Time {timeMetrics.avgDeliveryTime > 45 ? 'Slow' : 'Fast'}
                       </div>
                       <div className={`text-sm ${
                         timeMetrics.avgDeliveryTime > 45 ? 'text-red-600' : 'text-green-600'
                       }`}>
-                        {formatTimeSimple(timeMetrics.avgDeliveryTime)} {timeMetrics.avgDeliveryTime > 45 ? '(melhorar rotas)' : '(excelente performance)'}
+                        {formatTimeSimple(timeMetrics.avgDeliveryTime)} {timeMetrics.avgDeliveryTime > 45 ? '(improve routes)' : '(excellent performance)'}
                       </div>
                     </div>
 
@@ -382,12 +408,12 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                       <div className={`font-medium ${
                         operationalMetrics.retentionRate < 30 ? 'text-red-800' : 'text-green-800'
                       }`}>
-                        Retenção {operationalMetrics.retentionRate < 30 ? 'Baixa' : 'Saudável'}
+                        Retention {operationalMetrics.retentionRate < 30 ? 'Low' : 'Healthy'}
                       </div>
                       <div className={`text-sm ${
                         operationalMetrics.retentionRate < 30 ? 'text-red-600' : 'text-green-600'
                       }`}>
-                        {operationalMetrics.retentionRate}% {operationalMetrics.retentionRate < 30 ? '(focar em fidelização)' : '(boa base de clientes)'}
+                        {operationalMetrics.retentionRate}% {operationalMetrics.retentionRate < 30 ? '(focus on loyalty)' : '(good customer base)'}
                       </div>
                     </div>
                   </div>
@@ -402,7 +428,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Análise de Base de Clientes
+                  Customer Base Analysis
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -411,30 +437,30 @@ const Analytics: React.FC<AnalyticsProps> = ({ deliveryData, driverData, custome
                     <div className="text-3xl font-bold text-blue-600">
                       {operationalMetrics.totalUniqueCustomers}
                     </div>
-                    <div className="text-sm text-muted-foreground">Total de Clientes</div>
+                    <div className="text-sm text-muted-foreground">Total Customers</div>
                   </div>
                   
                   <div className="text-center p-4 border rounded-lg">
                     <div className="text-3xl font-bold text-green-600">
                       {operationalMetrics.repeatCustomers}
                     </div>
-                    <div className="text-sm text-muted-foreground">Clientes Recorrentes</div>
+                    <div className="text-sm text-muted-foreground">Repeat Customers</div>
                   </div>
                   
                   <div className="text-center p-4 border rounded-lg">
                     <div className="text-3xl font-bold text-purple-600">
                       {operationalMetrics.totalUniqueCustomers - operationalMetrics.repeatCustomers}
                     </div>
-                    <div className="text-sm text-muted-foreground">Clientes Únicos</div>
+                    <div className="text-sm text-muted-foreground">One-time Customers</div>
                   </div>
                 </div>
 
                 <div className="mt-6 p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-2">Insights de Retenção</h4>
+                  <h4 className="font-semibold text-green-800 mb-2">Retention Insights</h4>
                   <div className="text-sm text-green-700 space-y-1">
-                    <p>• Taxa de retenção: <strong>{operationalMetrics.retentionRate}%</strong></p>
-                    <p>• Clientes que fizeram múltiplos pedidos representam uma base sólida</p>
-                    <p>• {operationalMetrics.retentionRate > 30 ? 'Excelente' : 'Oportunidade de'} desempenho em fidelização</p>
+                    <p>• Retention rate: <strong>{operationalMetrics.retentionRate}%</strong></p>
+                    <p>• Customers who made multiple orders represent a solid base</p>
+                    <p>• {operationalMetrics.retentionRate > 30 ? 'Excellent' : 'Opportunity for'} loyalty performance</p>
                   </div>
                 </div>
               </CardContent>

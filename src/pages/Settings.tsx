@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,30 +12,25 @@ import { useOpenAI } from '@/hooks/useOpenAI';
 import { dataService } from '@/features/deliveries/services/dataService';
 
 const Settings = () => {
-  const [mapboxApiKey, setMapboxApiKey] = useState<string>('');
   const [openaiApiKey, setOpenaiApiKey] = useState<string>('');
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState<boolean>(false);
   const [showOpenAIKey, setShowOpenAIKey] = useState<boolean>(false);
-  const [showMapboxKey, setShowMapboxKey] = useState<boolean>(false);
   const { toast } = useToast();
   const { isReady, updateApiKey, error } = useOpenAI();
   
   // Load saved settings
   useEffect(() => {
-    const storedMapboxApiKey = localStorage.getItem('mapboxApiKey');
     const storedOpenaiApiKey = localStorage.getItem('openaiApiKey');
     const storedNotificationsEnabled = localStorage.getItem('notificationsEnabled');
     const storedAutoRefreshEnabled = localStorage.getItem('autoRefreshEnabled');
     
-    if (storedMapboxApiKey) setMapboxApiKey(storedMapboxApiKey);
     if (storedOpenaiApiKey) setOpenaiApiKey(storedOpenaiApiKey);
     if (storedNotificationsEnabled) setNotificationsEnabled(storedNotificationsEnabled === 'true');
     if (storedAutoRefreshEnabled) setAutoRefreshEnabled(storedAutoRefreshEnabled === 'true');
   }, []);
   
   const saveSettings = () => {
-    localStorage.setItem('mapboxApiKey', mapboxApiKey);
     localStorage.setItem('notificationsEnabled', notificationsEnabled.toString());
     localStorage.setItem('autoRefreshEnabled', autoRefreshEnabled.toString());
     
@@ -101,38 +95,12 @@ const Settings = () => {
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>API Keys</CardTitle>
+            <CardTitle>OpenAI API Configuration</CardTitle>
             <CardDescription>
-              Configure API keys for integration with external services
+              Configure OpenAI API key for AI-powered features
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="mapbox-key">Mapbox API Key</Label>
-              <div className="relative">
-                <Input 
-                  id="mapbox-key"
-                  type={showMapboxKey ? "text" : "password"}
-                  value={mapboxApiKey}
-                  onChange={(e) => setMapboxApiKey(e.target.value)}
-                  placeholder="Enter your Mapbox API key"
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowMapboxKey(!showMapboxKey)}
-                >
-                  {showMapboxKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Required for map visualization
-              </p>
-            </div>
-            
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="openai-key">OpenAI API Key</Label>
@@ -191,7 +159,7 @@ const Settings = () => {
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={saveSettings}>Save API Keys</Button>
+            <Button onClick={saveSettings}>Save API Key</Button>
           </CardFooter>
         </Card>
         

@@ -1,4 +1,33 @@
-# Welcome to your Lovable project
+# Fox Route Whisperer 🦊
+
+Sistema de análise de dados de entrega com IA integrada.
+
+## Funcionalidades
+
+- ✅ Upload múltiplo de arquivos CSV
+- ✅ Análise inteligente de dados de entrega
+- ✅ Visualização de métricas e performance
+- ✅ Armazenamento local expandido (50MB)
+- ✅ Chat com IA contextual
+- ✅ Interface moderna e responsiva
+
+## Tecnologias
+
+- React + TypeScript
+- Tailwind CSS
+- Supabase
+- Mapbox (para visualização de rotas)
+
+## Instalação
+
+```bash
+npm install
+npm run dev
+```
+
+## Sincronização com Lovable
+
+Este projeto está configurado para sincronizar automaticamente com o Lovable.
 
 ## Project info
 
@@ -49,16 +78,6 @@ npm run dev
 - Select the "Codespaces" tab.
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
 
 ## How can I deploy this project?
 

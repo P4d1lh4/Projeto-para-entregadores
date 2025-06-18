@@ -30,9 +30,9 @@ const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
-
+    
   const totalPages = Math.ceil(data.length / itemsPerPage);
-
+  
   const handleDataUpload = async (newData: any[]) => {
     try {
       await updateData(newData);
@@ -55,7 +55,7 @@ const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
       });
     }
   };
-
+  
   if (loading) {
     return <LoadingState />;
   }
@@ -98,7 +98,7 @@ const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
         }}
         showDetails={false}
       />
-
+      
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <DragDropFileUpload 
@@ -114,16 +114,16 @@ const DataImport: React.FC<DataImportProps> = ({ onDataUploaded }) => {
       {data.length === 0 ? (
         <EmptyState />
       ) : (
-        <DeliveryTable
+            <DeliveryTable 
           deliveries={data}
-          currentPage={currentPage}
-          totalPages={totalPages}
+              currentPage={currentPage}
+              totalPages={totalPages}
           startIndex={(currentPage - 1) * itemsPerPage}
           endIndex={Math.min(currentPage * itemsPerPage, data.length)}
-          setCurrentPage={setCurrentPage}
+              setCurrentPage={setCurrentPage}
           isLoading={loading}
-        />
-      )}
+            />
+          )}
     </div>
   );
 };

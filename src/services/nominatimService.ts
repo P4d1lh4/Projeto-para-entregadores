@@ -44,7 +44,7 @@ class NominatimService {
 
           const response = await fetch(url, {
             headers: {
-              'User-Agent': 'Fox-Delivery-App/1.0 (your-email@example.com)'
+              'User-Agent': 'Delivery-Analysis-App/1.0 (your-email@example.com)'
             }
           });
 

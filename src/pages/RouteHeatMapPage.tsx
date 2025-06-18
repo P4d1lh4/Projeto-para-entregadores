@@ -6,14 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { useDeliveryData } from '@/features/deliveries/hooks/useDeliveryData';
 import { Activity, TrendingUp, MapPin, Route, Package } from 'lucide-react';
 import EmptyState from '@/components/dashboard/EmptyState';
-import type { FoxDelivery } from '@/types/delivery';
+import type { DeliveryData } from '@/types/delivery';
 
 const RouteHeatMapPage: React.FC = () => {
   const { deliveryData, loading, error } = useDeliveryData();
 
-  // Convert DeliveryData to FoxDelivery format for heat map compatibility
+  // Convert DeliveryData to DeliveryData format for heat map compatibility
   // Since the current data doesn't have coordinates, we'll show a message about this
-  const foxDeliveries: FoxDelivery[] = deliveryData.map(delivery => ({
+  const deliveryRecords: DeliveryData[] = deliveryData.map(delivery => ({
     id: delivery.id,
     customer_name: delivery.customerName,
     delivering_driver: delivery.driverName,
@@ -31,11 +31,11 @@ const RouteHeatMapPage: React.FC = () => {
   }));
 
   // Calculate analytics using the converted data
-  const validDeliveries = foxDeliveries.filter(
+  const validDeliveries = deliveryRecords.filter(
     delivery => delivery.pickup_lat && delivery.pickup_lng && delivery.delivery_lat && delivery.delivery_lng
   );
 
-  const totalDeliveries = foxDeliveries.length;
+  const totalDeliveries = deliveryRecords.length;
   const geocodedDeliveries = validDeliveries.length;
   const geocodingRate = totalDeliveries > 0 ? Math.round((geocodedDeliveries / totalDeliveries) * 100) : 0;
 
@@ -152,10 +152,10 @@ const RouteHeatMapPage: React.FC = () => {
       </div>
 
       {/* Heat Map */}
-      <RouteHeatMap deliveries={foxDeliveries} className="col-span-full" />
+              <RouteHeatMap deliveries={deliveryRecords} className="col-span-full" />
 
       {/* Route Density Analysis */}
-      <RouteDensityAnalysis deliveries={foxDeliveries} />
+              <RouteDensityAnalysis deliveries={deliveryRecords} />
 
       {/* Additional Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

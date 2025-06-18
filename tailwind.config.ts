@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -63,7 +62,7 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				fox: {
+				delivery: {
 					blue: '#0A4D68',
 					orange: '#F97316',
 					light: '#F0F9FF',

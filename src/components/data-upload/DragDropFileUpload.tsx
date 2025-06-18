@@ -81,14 +81,14 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({
           </TabsList>
           
           <TabsContent value="single" className="space-y-4">
-            <UploadArea
-              onFileSelected={handleFile}
-              isProcessing={isProcessing}
-              maxFileSizeMB={maxFileSizeMB}
-            />
+          <UploadArea 
+            onFileSelected={handleFile} 
+            isProcessing={isProcessing} 
+            maxFileSizeMB={maxFileSizeMB}
+          />
             
             {(parsedData.length > 0 || (foxData && foxData.length > 0)) && (
-              <div className="space-y-4">
+          <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
                     {(foxData && foxData.length > 0 ? foxData.length : parsedData.length)} registros encontrados
@@ -101,26 +101,26 @@ const DragDropFileUpload: React.FC<DragDropFileUploadProps> = ({
                       disabled={isUploading}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Limpar
-                    </Button>
-                    <Button
-                      onClick={handleUpload}
+                Limpar
+              </Button>
+            <Button 
+              onClick={handleUpload}
                       disabled={isUploading || (parsedData.length === 0 && (!foxData || foxData.length === 0))}
                       size="sm"
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4 mr-2" />
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
                           Enviar Dados
-                        </>
-                      )}
-                    </Button>
-                  </div>
+                </>
+              )}
+            </Button>
+          </div>
                 </div>
 
                 <UploadProgress progress={uploadProgress} />

@@ -131,7 +131,7 @@ export const useFileUpload = (
       if (foxData.length > 0) {
         await dataService.updateFromFoxData(foxData);
       } else {
-        await dataService.updateDeliveryData(parsedData);
+      await dataService.updateDeliveryData(parsedData);
       }
       
       clearInterval(progressInterval);

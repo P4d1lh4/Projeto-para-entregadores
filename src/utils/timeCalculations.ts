@@ -272,7 +272,7 @@ function calculateCollectionTimeFromColumn(deliveries: any[]) {
 
     const totalWaitingTime = filteredTimes.reduce((sum, time) => sum + time, 0);
     const avgCollectionTime = totalWaitingTime / filteredTimes.length;
-
+    
     console.log('✅ [COLLECTION TIME] Resultado final:', {
         avgCollectionTime: avgCollectionTime.toFixed(2),
         samplesUsed: filteredTimes.length,
@@ -280,7 +280,7 @@ function calculateCollectionTimeFromColumn(deliveries: any[]) {
         percentualDados: ((filteredTimes.length / deliveries.length) * 100).toFixed(1) + '% dos dados totais',
         validade: avgCollectionTime >= 1 ? '✅ Realista' : '⚠️ Muito baixo'
     });
-
+    
     return {
         avgCollectionTime,
         usedColumn: true,
@@ -536,21 +536,21 @@ function calculateDeliveryTimeFromColumn(deliveries: any[]) {
 export function calculateAllTimeMetricsFromWaitingColumn(deliveries: any[]) {
     console.log('🏁 ===== INICIANDO CÁLCULO GERAL DE MÉTRICAS USANDO COLUNAS DE WAITING TIME =====');
     
-    if (!deliveries || deliveries.length === 0) {
+  if (!deliveries || deliveries.length === 0) {
         console.warn('⚠️ [METRICS] Nenhum dado de entrega fornecido');
-        return {
-            avgCollectionTime: 0,
-            avgDeliveryTime: 0,
-            avgCustomerExperienceTime: 0,
-            avgCollectionTimeFormatted: '00:00:00',
-            avgDeliveryTimeFormatted: '00:00:00',
-            avgCustomerExperienceTimeFormatted: '00:00:00',
-            usedWaitingTimeForCollection: false,
+    return {
+        avgCollectionTime: 0,
+        avgDeliveryTime: 0,
+        avgCustomerExperienceTime: 0,
+        avgCollectionTimeFormatted: '00:00:00',
+        avgDeliveryTimeFormatted: '00:00:00',
+        avgCustomerExperienceTimeFormatted: '00:00:00',
+        usedWaitingTimeForCollection: false,
             usedWaitingTimeForDelivery: false,
             collectionTimeMethod: 'N/A - Sem dados',
             deliveryTimeMethod: 'N/A - Sem dados'
-        };
-    }
+    };
+  }
     
     console.log('📊 [METRICS] Analisando dados:', {
         totalEntregas: deliveries.length,
@@ -575,23 +575,23 @@ export function calculateAllTimeMetricsFromWaitingColumn(deliveries: any[]) {
     let deliveryTimeMethod = deliveryMetrics.usedColumn 
         ? `Coluna "${deliveryMetrics.columnFound}" (${deliveryMetrics.samplesCount} amostras)`
         : 'Colunas waiting time não encontradas';
-    
+
     // Se não conseguimos dados das colunas waiting time, tentar usar timestamps
     if (!usedWaitingTimeForCollection || !usedWaitingTimeForDelivery) {
         console.log('⚠️ [METRICS] Tentando fallback para timestamps...');
         
         const timestampDeliveries = deliveries.map(d => ({
-            id: d.id,
-            created_at: parseDate(d.created_at || d.createdAt),
-            collected_at: parseDate(d.collected_at || d.collectedAt),
-            delivered_at: parseDate(d.delivered_at || d.deliveredAt),
-        }));
-        
+    id: d.id,
+    created_at: parseDate(d.created_at || d.createdAt),
+    collected_at: parseDate(d.collected_at || d.collectedAt),
+    delivered_at: parseDate(d.delivered_at || d.deliveredAt),
+  }));
+
         // Fallback para tempo de coleta
         if (!usedWaitingTimeForCollection) {
             const collectionDurations = timestampDeliveries
-                .filter(d => d.created_at && d.collected_at)
-                .map(d => d.collected_at!.getTime() - d.created_at!.getTime())
+          .filter(d => d.created_at && d.collected_at)
+          .map(d => d.collected_at!.getTime() - d.created_at!.getTime())
                 .filter(duration => duration >= 0 && duration <= 24 * 60 * 60 * 1000) // Max 24 horas
                 .map(duration => duration / (1000 * 60)); // Converter para minutos
             
@@ -610,8 +610,8 @@ export function calculateAllTimeMetricsFromWaitingColumn(deliveries: any[]) {
         // Fallback para tempo de entrega
         if (!usedWaitingTimeForDelivery) {
             const deliveryDurations = timestampDeliveries
-                .filter(d => d.collected_at && d.delivered_at)
-                .map(d => d.delivered_at!.getTime() - d.collected_at!.getTime())
+          .filter(d => d.collected_at && d.delivered_at)
+          .map(d => d.delivered_at!.getTime() - d.collected_at!.getTime())
                 .filter(duration => duration >= 0 && duration <= 10 * 60 * 60 * 1000) // Max 10 horas
                 .map(duration => duration / (1000 * 60)); // Converter para minutos
             
@@ -619,7 +619,7 @@ export function calculateAllTimeMetricsFromWaitingColumn(deliveries: any[]) {
                 avgDeliveryTime = deliveryDurations.reduce((sum, duration) => sum + duration, 0) / deliveryDurations.length;
                 deliveryTimeMethod = `Timestamps (collected_at → delivered_at) (${deliveryDurations.length} amostras)`;
                 console.log(`✅ [METRICS] Fallback delivery time: ${avgDeliveryTime.toFixed(2)} min`);
-            } else {
+  } else {
                 // Último fallback: estimativa padrão baseada na indústria
                 avgDeliveryTime = 35; // 35 minutos como estimativa padrão
                 deliveryTimeMethod = 'Estimativa padrão da indústria (35 min)';
@@ -642,7 +642,7 @@ export function calculateAllTimeMetricsFromWaitingColumn(deliveries: any[]) {
         calculationMethod: 'Soma das médias de coleta e entrega'
     });
 
-    return {
+        return {
         avgCollectionTime,
         avgDeliveryTime,
         avgCustomerExperienceTime,

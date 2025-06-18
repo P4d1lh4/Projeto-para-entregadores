@@ -1,6 +1,6 @@
 // import { dataService } from '@/features/deliveries/services/dataService';
 // import type { DeliveryData, DriverData, CustomerData } from '@/features/deliveries/types';
-// import type { FoxDelivery } from '@/types/delivery';
+// import type { DeliveryData } from '@/types/delivery';
 
 // Tipos temporários para garantir funcionamento
 interface DeliveryData {
@@ -23,7 +23,7 @@ interface CustomerData {
   address: string;
 }
 
-interface FoxDelivery {
+interface DeliveryRecord {
   cost?: number;
   driver?: string;
   collector?: string;
@@ -34,7 +34,7 @@ interface FoxDelivery {
 
 export interface AIAnalysisContext {
   deliveryData: DeliveryData[];
-  foxData: FoxDelivery[];
+  deliveryData: DeliveryRecord[];
   driverData: DriverData[];
   customerData: CustomerData[];
   totalRecords: number;
@@ -87,7 +87,7 @@ export class AIAnalysisService {
       { name: 'Empresa XYZ', deliveries: 32, address: 'Campinas, SP' }
     ];
     
-    const foxData: FoxDelivery[] = [
+    const deliveryData: DeliveryRecord[] = [
       { cost: 25.50, driver: 'João Silva', status: 'Entregue', customer: 'Empresa ABC' },
       { cost: 18.90, driver: 'Maria Santos', status: 'Entregue', customer: 'Empresa XYZ' }
     ];
@@ -137,7 +137,7 @@ export class AIAnalysisService {
 
     return {
       deliveryData,
-      foxData,
+      deliveryData,
       driverData,
       customerData,
       totalRecords: deliveryData.length,
@@ -183,9 +183,9 @@ INSTRUÇÕES:
 7. Use português brasileiro em todas as respostas
 
 DADOS DETALHADOS DOS ARQUIVOS IMPORTADOS:
-${context.foxData.length > 0 ? `
-Dados Fox (formato Excel original):
-- ${context.foxData.length} registros detalhados
+    ${context.deliveryData.length > 0 ? `
+Dados de Entrega (formato Excel original):
+- ${context.deliveryData.length} registros detalhados
 - Inclui informações de custo, status, endereços específicos
 - Dados de motoristas coletores e entregadores
 ` : ''}
@@ -319,9 +319,9 @@ ${locationStats.cities.map(city => {
   }
 
   private analyzeCostQuery(query: string, context: AIAnalysisContext): string {
-    // Análise básica de custos baseada nos dados Fox se disponíveis
-    if (context.foxData.length > 0) {
-      const costsWithData = context.foxData.filter(d => d.cost && d.cost > 0);
+      // Análise básica de custos baseada nos dados de entrega se disponíveis
+  if (context.deliveryData.length > 0) {
+    const costsWithData = context.deliveryData.filter(d => d.cost && d.cost > 0);
       if (costsWithData.length > 0) {
         const totalRevenue = costsWithData.reduce((sum, d) => sum + (d.cost || 0), 0);
         const avgCost = totalRevenue / costsWithData.length;
@@ -330,7 +330,7 @@ ${locationStats.cities.map(city => {
 
 **Receita Total:** R$ ${totalRevenue.toFixed(2)}
 **Custo Médio por Entrega:** R$ ${avgCost.toFixed(2)}
-**Entregas com dados de custo:** ${costsWithData.length} de ${context.foxData.length}
+**Entregas com dados de custo:** ${costsWithData.length} de ${context.deliveryData.length}
 
 **Por motorista (baseado nos dados):**
 ${context.topDrivers.slice(0, 3).map(driver => 
@@ -338,7 +338,7 @@ ${context.topDrivers.slice(0, 3).map(driver =>
 ).join('\n')}
 
 **Oportunidades:**
-- ${context.foxData.length - costsWithData.length} entregas sem dados de custo precisam ser analisadas
+- ${context.deliveryData.length - costsWithData.length} entregas sem dados de custo precisam ser analisadas
 - Margem pode ser otimizada padronizando rotas dos melhores motoristas`;
       }
     }

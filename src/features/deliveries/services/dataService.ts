@@ -236,10 +236,10 @@ class DataService {
 
   async updateDeliveryData(newData: DeliveryData[]): Promise<void> {
     try {
-      this.deliveryData = newData;
-      this.driverData = calculateDriverMetrics(newData);
-      this.customerData = calculateCustomerMetrics(newData);
-      
+    this.deliveryData = newData;
+    this.driverData = calculateDriverMetrics(newData);
+    this.customerData = calculateCustomerMetrics(newData);
+    
       console.log(`📊 Updating data: ${newData.length} deliveries, ${this.driverData.length} drivers, ${this.customerData.length} customers`);
       
       // Try to store data with graceful degradation
@@ -295,15 +295,15 @@ class DataService {
     
     // Start background operations immediately (non-blocking for UI)
     Promise.resolve().then(async () => {
-      try {
+    try {
         console.log('💾 Uploading to Supabase in background...');
-        const uploadResult = await uploadDeliveryData(foxData);
-        if (uploadResult.success) {
-          console.log(`✅ Successfully uploaded ${uploadResult.count} records to Supabase`);
-        } else {
+      const uploadResult = await uploadDeliveryData(foxData);
+      if (uploadResult.success) {
+        console.log(`✅ Successfully uploaded ${uploadResult.count} records to Supabase`);
+      } else {
           console.warn('⚠️ Background Supabase upload failed:', uploadResult.error);
-        }
-      } catch (error) {
+      }
+    } catch (error) {
         console.warn('⚠️ Background Supabase upload error:', error);
       }
     });

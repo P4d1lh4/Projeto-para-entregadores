@@ -1,4 +1,4 @@
-# 🧠 Sistema de IA Contextual - Fox Delivery
+# 🧠 Sistema de IA Contextual - Análise de Dados de Entrega
 
 ## Visão Geral
 
@@ -17,7 +17,7 @@ O Sistema de IA Contextual é uma implementação avançada que fornece análise
 Dados Importados → Análise Contextual → Prompt Personalizado → IA Específica
      ↓                    ↓                    ↓                    ↓
 • CSV/Excel        • Estatísticas      • Dados REAIS        • Respostas
-• Fox Format       • Top Performers    • Nomes Específicos  • Contextuais
+• Formato Padrão   • Top Performers    • Nomes Específicos  • Contextuais
 • Múltiplos        • Localização       • Números Precisos   • Acionáveis
   Arquivos         • Tendências        • Período Exato      • Não-Genéricas
 ```
@@ -91,7 +91,7 @@ Considere treinar Carlos Santos nas práticas de João Silva."
 - Comparações entre motoristas reais
 
 ### Análise de Custos
-- Receita total calculada dos dados Fox
+- Receita total calculada dos dados importados
 - Custo médio por entrega
 - ROI por motorista específico
 
@@ -137,7 +137,7 @@ Considere treinar Carlos Santos nas práticas de João Silva."
 - ✅ Oportunidades de otimização direcionadas
 
 ### 4. **Contextualização Completa**
-- ✅ Integração com dados Fox, CSV e múltiplos formatos
+- ✅ Integração com dados Excel, CSV e múltiplos formatos
 - ✅ Análise temporal baseada no período importado
 - ✅ Correlações específicas entre métricas
 
@@ -150,7 +150,7 @@ Considere treinar Carlos Santos nas práticas de João Silva."
 
 ### Compatibilidade:
 - ✅ Funciona com dados existentes do sistema
-- ✅ Suporte a formato Fox (Excel)
+- ✅ Suporte a formato Excel padrão
 - ✅ Integração com DataService
 - ✅ Compatível com upload múltiplo implementado
 
@@ -209,4 +209,4 @@ Agora o usuário obtém:
 
 O Sistema de IA Contextual representa um avanço significativo na análise de dados de entrega, transformando dados brutos em insights acionáveis específicos. A implementação elimina respostas genéricas e fornece análises precisas baseadas exclusivamente nos dados reais importados pelo usuário.
 
-Esta solução posiciona o Fox Delivery como uma ferramenta de análise inteligente, capaz de fornecer insights de nível empresarial baseados em dados específicos do usuário. 
+Esta solução posiciona o sistema de Análise de Dados de Entrega como uma ferramenta de análise inteligente, capaz de fornecer insights de nível empresarial baseados em dados específicos do usuário. 

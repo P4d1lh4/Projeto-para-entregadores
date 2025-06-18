@@ -1,8 +1,8 @@
-import type { FoxDelivery } from '@/types/delivery';
+import type { DeliveryData } from '@/types/delivery';
 
 // Function to generate mock delivery data in the correct format
-export function generateMockFoxDeliveries(count: number = 50): FoxDelivery[] {
-  const deliveries: FoxDelivery[] = [];
+export function generateMockDeliveries(count: number = 50): DeliveryData[] {
+  const deliveries: DeliveryData[] = [];
   
   const statusOptions = ['delivered', 'in_transit', 'pending', 'collected', 'cancelled'];
   
@@ -43,8 +43,8 @@ export function generateMockFoxDeliveries(count: number = 50): FoxDelivery[] {
     const baseCost = 15 + Math.random() * 85; // Custo entre $15-100
     const distance = 2 + Math.random() * 25; // Distância entre 2-27 km
     
-    const delivery: FoxDelivery = {
-      id: `FOX-${String(i + 1).padStart(4, '0')}`,
+    const delivery: DeliveryData = {
+      id: `DEL-${String(i + 1).padStart(4, '0')}`,
       job_id: `JOB-${String(i + 1).padStart(6, '0')}`,
       invoice_id: `INV-${String(i + 1).padStart(5, '0')}`,
       invoice_number: `2024-${String(i + 1).padStart(4, '0')}`,

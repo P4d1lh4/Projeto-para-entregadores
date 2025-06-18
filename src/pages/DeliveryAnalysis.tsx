@@ -16,7 +16,6 @@ import OpenStreetMap from '@/components/map/OpenStreetMap';
 import { RouteHeatMap } from '@/components/map/RouteHeatMap';
 import { RouteDensityAnalysis } from '@/components/analytics/RouteDensityAnalysis';
 import type { DeliveryData, DeliveryFilters } from '@/features/deliveries/types';
-import type { FoxDelivery } from '@/types/delivery';
 
 const DeliveryAnalysis: React.FC = () => {
   const { deliveryData, loading } = useDeliveryData();
@@ -77,8 +76,8 @@ const DeliveryAnalysis: React.FC = () => {
     }
   }, [deliveryData]);
 
-  // Converter para formato FoxDelivery para o heat map
-  const foxDeliveries: FoxDelivery[] = (deliveryData || []).map(delivery => ({
+  // Converter para formato DeliveryData para o heat map
+  const deliveryRecords: DeliveryData[] = (deliveryData || []).map(delivery => ({
     id: delivery.id,
     customer_name: delivery.customerName,
     delivering_driver: delivery.driverName,
@@ -94,11 +93,11 @@ const DeliveryAnalysis: React.FC = () => {
   }));
 
   // Estatísticas para o heat map
-  const validDeliveries = foxDeliveries.filter(
+  const validDeliveries = deliveryRecords.filter(
     delivery => delivery.pickup_lat && delivery.pickup_lng && delivery.delivery_lat && delivery.delivery_lng
   );
   
-  const totalDeliveries = foxDeliveries.length;
+  const totalDeliveries = deliveryRecords.length;
   const geocodedDeliveries2 = validDeliveries.length;
   const geocodingRate = totalDeliveries > 0 ? Math.round((geocodedDeliveries2 / totalDeliveries) * 100) : 0;
 

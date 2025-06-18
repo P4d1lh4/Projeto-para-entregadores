@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import DeliveryAnalysisReport from '@/components/analytics/DeliveryAnalysisReport';
 import { fetchDeliveryData } from '@/services/deliveryService';
-import { generateMockFoxDeliveries } from '@/utils/mockDeliveryGenerator';
-import type { FoxDelivery } from '@/types/delivery';
+import { generateMockDeliveries } from '@/utils/mockDeliveryGenerator';
+import type { DeliveryData } from '@/types/delivery';
 import { Loader2, AlertCircle, Info } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const DeliveryAnalysisPage: React.FC = () => {
-  const [deliveries, setDeliveries] = useState<FoxDelivery[]>([]);
+  const [deliveries, setDeliveries] = useState<DeliveryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [usingMockData, setUsingMockData] = useState(false);
@@ -24,7 +24,7 @@ const DeliveryAnalysisPage: React.FC = () => {
         if (result.error || !result.data || result.data.length === 0) {
           // If there's no real data, use mock data for demonstration
           console.log('Using mock data for demonstration');
-          const mockData = generateMockFoxDeliveries(150);
+          const mockData = generateMockDeliveries(150);
           setDeliveries(mockData);
           setUsingMockData(true);
         } else {
@@ -34,7 +34,7 @@ const DeliveryAnalysisPage: React.FC = () => {
       } catch (err) {
         console.error('Error loading data:', err);
         // In case of error, still use mock data
-        const mockData = generateMockFoxDeliveries(150);
+        const mockData = generateMockDeliveries(150);
         setDeliveries(mockData);
         setUsingMockData(true);
       } finally {

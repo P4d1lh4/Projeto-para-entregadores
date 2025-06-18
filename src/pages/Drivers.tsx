@@ -191,7 +191,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                 try {
                   deliveredTime = new Date((delivery as any)[field]);
                   if (!isNaN(deliveredTime.getTime())) break;
-                } catch (e) {
+          } catch (e) {
                   continue;
                 }
               }
@@ -705,7 +705,7 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                           const collectFields = ['collected_at', 'pickup_time', 'collected_time', 'pickupTime', 'collectionTime'];
                           for (const field of collectFields) {
                             if ((delivery as any)[field]) {
-                              try {
+                          try {
                                 collectedTime = new Date((delivery as any)[field]);
                                 if (!isNaN(collectedTime.getTime())) {
                                   timeSource = 'actual';
@@ -741,8 +741,8 @@ const Drivers: React.FC<DriversProps> = ({ driverData: propDriverData }) => {
                             // Use estimated time for completed deliveries without time data
                             individualTime = selectedDriver.averageTime > 0 ? selectedDriver.averageTime : 45;
                             timeSource = 'estimated';
-                          }
-                        } catch (e) {
+                            }
+                          } catch (e) {
                           // Error in time calculation
                         }
 

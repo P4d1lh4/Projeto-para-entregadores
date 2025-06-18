@@ -23,7 +23,7 @@ export class StorageUtils {
       const availableSpace = this.MAX_STORAGE_SIZE - currentUsage;
       
       console.log(`💽 Storage usage: ${(currentUsage / 1024 / 1024).toFixed(2)}MB / ${(this.MAX_STORAGE_SIZE / 1024 / 1024).toFixed(2)}MB`);
-      
+        
       // If we don't have enough space, aggressive cleanup
       if (sizeInBytes > availableSpace) {
         console.log('🧹 Insufficient space, performing aggressive cleanup...');
@@ -221,10 +221,10 @@ export class StorageUtils {
   private static cleanupOldData(): void {
     try {
       const keysToCheck = [
-        'foxDeliveryData',
-        'foxDriverData', 
-        'foxCustomerData',
-        'foxOriginalData'
+        'deliveryData',
+        'driverData', 
+        'customerData',
+        'originalData'
       ];
 
       for (const key of keysToCheck) {
@@ -254,10 +254,10 @@ export class StorageUtils {
       console.log('🚨 Performing aggressive cleanup...');
       
       const keysToCheck = [
-        'foxDeliveryData',
-        'foxDriverData', 
-        'foxCustomerData',
-        'foxOriginalData'
+        'deliveryData',
+        'driverData', 
+        'customerData',
+        'originalData'
       ];
 
       // Clear all keys except the one we're trying to store
@@ -272,7 +272,7 @@ export class StorageUtils {
       const allKeys = Object.keys(localStorage);
       for (const key of allKeys) {
         // Keep only essential keys
-        if (!key.startsWith('fox') && 
+        if (!key.startsWith('delivery') && 
             !key.includes('chunk') && 
             !key.includes('theme') &&
             !key.includes('settings')) {

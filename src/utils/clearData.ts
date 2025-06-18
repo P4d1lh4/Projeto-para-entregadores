@@ -1,18 +1,18 @@
 // Utility to clear all stored data
 export const clearAllData = (): void => {
-  localStorage.removeItem('foxDeliveryData');
+  localStorage.removeItem('deliveryData');
   console.log('All stored data cleared');
 };
 
 // Function to check if data exists
 export const hasStoredData = (): boolean => {
-  const data = localStorage.getItem('foxDeliveryData');
+  const data = localStorage.getItem('deliveryData');
   return data !== null && data !== undefined;
 };
 
 // Function to get data count
 export const getStoredDataCount = (): number => {
-  const data = localStorage.getItem('foxDeliveryData');
+  const data = localStorage.getItem('deliveryData');
   if (!data) return 0;
   
   try {

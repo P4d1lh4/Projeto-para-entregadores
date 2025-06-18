@@ -1,5 +1,4 @@
-
-export interface FoxDelivery {
+export interface DeliveryData {
   id?: string;
   job_id?: string;
   invoice_id?: string;

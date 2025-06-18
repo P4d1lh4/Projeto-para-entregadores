@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { FoxDelivery } from '@/types/delivery';
+import type { DeliveryData } from '@/types/delivery';
 
 // Helper function to find the closest matching key in an object
 function findMatchingKey(obj: any, possibleKeys: string[]): string | undefined {
@@ -92,7 +92,7 @@ const dataConverters = {
   }
 };
 
-export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
+export async function parseDeliveryFile(file: File): Promise<DeliveryData[]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
@@ -193,8 +193,8 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
           console.log('⚠️ No company field found in XLSX. Available columns:', Object.keys(firstRow));
         }
         
-        // Map Excel data to our FoxDelivery structure with improved column matching
-        const deliveries: FoxDelivery[] = jsonData.map((row: any, index) => {
+          // Map Excel data to our DeliveryData structure with improved column matching
+  const deliveries: DeliveryData[] = jsonData.map((row: any, index) => {
           // This function tries to find the best matching column
           const getValue = (possibleKeys: string[]) => {
             const key = findMatchingKey(row, possibleKeys);
@@ -295,7 +295,7 @@ export async function parseFoxDeliveryFile(file: File): Promise<FoxDelivery[]> {
 }
 
 // Function to enhance delivery data with additional insights
-function enhanceDeliveryData(deliveries: FoxDelivery[]): FoxDelivery[] {
+function enhanceDeliveryData(deliveries: DeliveryData[]): DeliveryData[] {
   if (deliveries.length === 0) return deliveries;
   
   // Calculate additional metrics for the dataset
@@ -303,7 +303,7 @@ function enhanceDeliveryData(deliveries: FoxDelivery[]): FoxDelivery[] {
   
   return deliveries.map(delivery => {
     // Data quality checks and enhancement
-    const enhanced: FoxDelivery = { ...delivery };
+    const enhanced: DeliveryData = { ...delivery };
     
     // Add missing delivery status if possible
     if (!enhanced.status) {
@@ -362,7 +362,7 @@ function cleanupAddress(address: string): string {
 }
 
 // Calculate overall metrics for the dataset
-function calculateDatasetMetrics(deliveries: FoxDelivery[]): void {
+function calculateDatasetMetrics(deliveries: DeliveryData[]): void {
   // Only perform calculations if we have enough data
   if (deliveries.length < 2) return;
   

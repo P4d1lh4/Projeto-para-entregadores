@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { FoxDelivery, GeocodeResult } from "@/types/delivery";
+import type { DeliveryData, GeocodeResult } from "@/types/delivery";
 import { geocodeAddress, batchGeocodeAddresses } from "./geocodingService";
 
-export const uploadDeliveryData = async (deliveries: FoxDelivery[]): Promise<{ success: boolean; error?: string; count?: number }> => {
+export const uploadDeliveryData = async (deliveries: DeliveryData[]): Promise<{ success: boolean; error?: string; count?: number }> => {
   try {
     console.log('🚀 Starting upload to Supabase...');
     console.log(`📊 Uploading ${deliveries.length} deliveries`);
@@ -64,7 +64,7 @@ export const uploadDeliveryData = async (deliveries: FoxDelivery[]): Promise<{ s
   }
 };
 
-export const fetchDeliveryData = async (): Promise<{ data: FoxDelivery[] | null; error: string | null }> => {
+export const fetchDeliveryData = async (): Promise<{ data: DeliveryData[] | null; error: string | null }> => {
   try {
     const { data, error } = await supabase
       .from('fox_deliveries')
@@ -73,7 +73,7 @@ export const fetchDeliveryData = async (): Promise<{ data: FoxDelivery[] | null;
     
     if (error) throw error;
     
-    return { data: data as FoxDelivery[], error: null };
+    return { data: data as DeliveryData[], error: null };
   } catch (error) {
     console.error('Error fetching delivery data:', error);
     return { 
@@ -91,7 +91,7 @@ export const fetchDeliveryDataWithRoutes = async (
     dateTo?: Date,
     status?: string
   }
-): Promise<{ data: FoxDelivery[] | null; error: string | null }> => {
+): Promise<{ data: DeliveryData[] | null; error: string | null }> => {
   try {
     let query = supabase
       .from('fox_deliveries')
@@ -129,15 +129,15 @@ export const fetchDeliveryDataWithRoutes = async (
       return { data: [], error: null };
     }
     
-    // Cast data to FoxDelivery type to ensure TypeScript knows about the coordinate fields
-    const foxDeliveries = data as FoxDelivery[];
+    // Cast data to DeliveryData type to ensure TypeScript knows about the coordinate fields
+    const deliveryRecords = data as DeliveryData[];
     
     // Extract unique pickup and delivery addresses
-    const pickupAddresses = foxDeliveries
+    const pickupAddresses = deliveryRecords
       .map(item => item.pickup_address)
       .filter((address): address is string => !!address);
     
-    const deliveryAddresses = foxDeliveries
+    const deliveryAddresses = deliveryRecords
       .map(item => item.delivery_address)
       .filter((address): address is string => !!address);
     
@@ -147,7 +147,7 @@ export const fetchDeliveryDataWithRoutes = async (
     const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
     
     // Enrich delivery data with coordinates
-    const enrichedData = foxDeliveries.map(delivery => {
+    const enrichedData = deliveryRecords.map(delivery => {
       const enriched = { ...delivery };
       
       if (delivery.pickup_address && geocodeResults[delivery.pickup_address]) {

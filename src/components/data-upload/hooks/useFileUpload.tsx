@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { parseFile, formatDeliveryData } from '@/lib/file-utils';
-import { parseFoxDeliveryFile } from '@/utils/excel-parser';
+import { parseDeliveryFile } from '@/utils/excel-parser';
 import { dataService } from '@/features/deliveries/services/dataService';
 import type { DeliveryData } from '@/features/deliveries/types';
-import type { FoxDelivery } from '@/types/delivery';
+import type { DeliveryData as DeliveryRecord } from '@/types/delivery';
 
 type UseFileUploadResult = {
   parsedData: DeliveryData[];
-  foxData: FoxDelivery[]; // Original XLSX data for debugging
+  foxData: DeliveryRecord[]; // Original XLSX data for debugging
   isProcessing: boolean;
   isUploading: boolean;
   uploadProgress: number;
@@ -24,7 +24,7 @@ export const useFileUpload = (
   onDataUploaded?: (data: DeliveryData[]) => void
 ): UseFileUploadResult => {
   const [parsedData, setParsedData] = useState<DeliveryData[]>([]);
-  const [foxData, setFoxData] = useState<FoxDelivery[]>([]);
+  const [foxData, setFoxData] = useState<DeliveryRecord[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -57,11 +57,11 @@ export const useFileUpload = (
     
     try {
       let rawData: any[] = [];
-      let foxRawData: FoxDelivery[] = [];
+      let foxRawData: DeliveryRecord[] = [];
       
       if (fileExt === 'xlsx' || fileExt === 'xls') {
         console.log('📊 Processando arquivo Excel com parser específico...');
-        foxRawData = await parseFoxDeliveryFile(file);
+        foxRawData = await parseDeliveryFile(file);
         rawData = foxRawData;
         setFoxData(foxRawData); // Store the original Fox data
       } else {

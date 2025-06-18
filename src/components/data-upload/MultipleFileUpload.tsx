@@ -11,10 +11,10 @@ import PreviewTable from './preview-table/PreviewTable';
 import UploadProgress from './upload-progress/UploadProgress';
 import { useToast } from '@/hooks/use-toast';
 import { parseFile, formatDeliveryData } from '@/lib/file-utils';
-import { parseFoxDeliveryFile } from '@/utils/excel-parser';
+import { parseDeliveryFile } from '@/utils/excel-parser';
 import { dataService } from '@/features/deliveries/services/dataService';
 import type { DeliveryData } from '@/features/deliveries/types';
-import type { FoxDelivery } from '@/types/delivery';
+import type { DeliveryData as DeliveryRecord } from '@/types/delivery';
 
 type MultipleFileUploadProps = {
   onDataUploaded?: (data: DeliveryData[]) => void;
@@ -37,7 +37,7 @@ const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [parsedData, setParsedData] = useState<DeliveryData[]>([]);
-  const [foxData, setFoxData] = useState<FoxDelivery[]>([]);
+  const [foxData, setFoxData] = useState<DeliveryRecord[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -75,7 +75,7 @@ const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
 
     setIsProcessing(true);
     let allParsedData: DeliveryData[] = [];
-    let allFoxData: FoxDelivery[] = [];
+    let allFoxData: DeliveryRecord[] = [];
 
     try {
       for (let i = 0; i < selectedFiles.length; i++) {
@@ -98,10 +98,10 @@ const MultipleFileUpload: React.FC<MultipleFileUploadProps> = ({
 
           // Try Fox format first
           let fileData: DeliveryData[] = [];
-          let foxFileData: FoxDelivery[] = [];
+          let foxFileData: DeliveryRecord[] = [];
 
           try {
-            foxFileData = await parseFoxDeliveryFile(file);
+            foxFileData = await parseDeliveryFile(file);
             fileData = formatDeliveryData(foxFileData);
             console.log(`📋 Parsed ${fileData.length} Fox delivery records from ${file.name}`);
           } catch (foxError) {
